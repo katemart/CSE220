@@ -875,6 +875,7 @@ drop_piece:
 	move $a1, $s3								# $a1 = rotation
 	move $a2, $s4								# $a2 = rotated_piece
 	jal rotate									# go to rotate
+	bltz $v0, invalid_drop_piece				# if $v0 < 0, it is an invalid piece
 	# check that rotated piece fits in state otherwise return -3 ($s5, $s6, $s7 free to use)
 	drop_piece_validate:
 	lbu $s5, 0($s4)								# $s5 = rotated_piece.num_rows (to use for calculating bottom)
@@ -1091,6 +1092,7 @@ drop_piece_rest_rot:
 
 # PART VIII
 check_row_clear:
+	
 	jr $ra
 
 # PART IX
