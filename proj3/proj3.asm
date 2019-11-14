@@ -102,6 +102,7 @@ load_game:
 	addi $s0, $s0, 1							# go to next char of struct
 	addi $t5, $t5, -1							# decrement $t5
 	bgtz $t5, read_chars_loop					# if $t5 > 0, loop again
+	j end_of_file
 	load_file_error:
 	li $v0, -1									# $v0 = -1 to indicate error
 	li $v1, -1									# $v1 = -1 to indicate error
@@ -1209,12 +1210,12 @@ check_row_clear:
 	bne $t8, $v0, row_not_cleared				# if $v0 != 'O' row cannot be cleared
 	addi $t9, $t9, 1							# else increment col val
 	blt $t9, $s2, check_row_clear_loop			# if col val < state.num_cols, loop again
-	j row_cleared_loop_outer								# go to row_cleared
+	j row_cleared_loop_outer					# go to row_cleared_loop_outer
 	row_not_cleared:
-	li $s3, 0									# if row cant be cleared, return val = 0
+	li $s3, 0									# if row cant be cleared, return val = 0 (not cleared)
 	j end_row_clear								# go to end func
 	row_cleared_loop_outer:
-	li $t8, 0
+	li $t8, 0									# $t8 = 0
 	lbu $s3, 1($s0)								# $s3 = state.num_cols (counter)
 	row_cleared_loop_inner:
 	addi $t7, $s1, -1							# $t7 = row - 1
@@ -1244,12 +1245,12 @@ check_row_clear:
 	jal set_slot								# go to set_slot
 	addi $t7, $t7, 1							# increment col val
 	blt $t7, $t8, row_cleared_loop				# if $t7 < $t8, loop again
-	li $s3, 1									# if row can be cleared, return val = 1
+	li $s3, 1									# if row can be cleared, return val = 1 (cleared)
 	j end_row_clear								# go to end func
 	invalid_row_clear:
-	li $s3, -1
+	li $s3, -1									# return val = -1 (invalid)
 	end_row_clear:
-	move $v0, $s3
+	move $v0, $s3								# $v0 = return val
 	# restore regs from stack
 	lw $ra, 16($sp)
 	lw $s3, 12($sp)
@@ -1257,11 +1258,47 @@ check_row_clear:
 	lw $s1, 4($sp)
 	lw $s0, 0($sp)
 	addi $sp, $sp, 20
-	jr $ra
-
+	jr $ra										# go back to where function was called
+	
 # PART IX
 simulate_game:
+	lw $t0, 0($sp)								# $t0 = num_pieces_to_drop from stack
+	lw $t1, 4($sp)								# $t1 = pieces_array from stack
+	# allocate room on stack for registers
+	addi $sp, $sp, -36
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	sw $s2, 8($sp)
+	sw $s3, 12($sp)
+	sw $s4, 16($sp)
+	sw $s5, 20($sp)
+	sw $s6, 24($sp)
+	sw $s7, 28($sp)
+	sw $ra, 32($sp)
+	# declare vars
+	move $s0, $a0								# $s0 = state
+	move $s1, $a1								# $s1 = filename
+	move $s2, $a2								# $s2 = moves
+	move $s3, $a3								# $s3 = rotated_piece
+	move $s4, $t0								# $s4 = num_pieces_to_drop
+	move $s5, $t1								# $s5 = pieces_array
+	li $s6, 0									# $s6 = num of successfully dropped pieces
+	li $s7, 0									# $s7 = score
 	
+	
+	
+	
+	# restore regs from stack
+	lw $ra, 32($sp)
+	lw $s7, 28($sp)
+	lw $s6, 24($sp)
+	lw $s5, 20($sp)
+	lw $s4, 16($sp)
+	lw $s3, 12($sp)
+	lw $s2, 8($sp)
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 36
 	jr $ra
 
 #################### DO NOT CREATE A .data SECTION ####################
