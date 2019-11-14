@@ -236,6 +236,9 @@ rotate:
 	lbu $s4, 1($s0)								# $t2 = num_cols of piece
 	bne $t0, $s3, cont_rotate					# if num_rows != 2, check rest of pieces
 	bne $t0, $s4, cont_rotate					# if num_cols != 2, check rest of pieces
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_original					# set rotated_piece for O
 	j end_rotate								# go to end_rotate
 	# if piece is not O, check rest of pieces
@@ -251,17 +254,25 @@ rotate:
 	beq $s5, $t1, rotate_twice					# when $s5 = 2, rotate twice
 	beq $s5, $t2, rotate_thrice					# when $s5 = 3, rotate thrice
 rotate_zero:
+	move $a0, $s0								# $a0 = piece
 	jal check_rotated_I							# check if given piece is I, rotated I or not I	
 	li $t0, 2									# $t0 = 2
-	beq $t0, $v0, cont_check_zero				# if $t0 = $v0, then it is not I so cont checking
+	beq $t0, $v0, cont_check_zero				# if $t0 = $v0, then it is not I so cont 
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_original					# else if it is I go to rotate_init_original
 	j end_rotate								# and go to end_rotate
 	# non-rotated piece is given:
 	cont_check_zero:
+	move $a0, $s0								# $a0 = piece
 	jal check_rotated_piece						# check if given piece is rotated
 	bltz $v0, invalid_rotation					# if $v0 < 0, it is an invalid piece
 	li $t0, 1
 	beq $t0, $v0, cont_rotate_zero				# if $t0 = $v0, then piece is rotated so cont rotating
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_original					# initialize piece
 	rotate_zero_loop1:
 	li $s3, 0									# $s3 = 0
@@ -294,6 +305,9 @@ rotate_zero:
 	j end_rotate								# go to end_rotate
 	# rotated piece is given:
 	cont_rotate_zero:
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_original					# initialize piece
 	rotate_zero_loop2:
 	li $s3, 0									# $s3 = 0
@@ -321,17 +335,25 @@ rotate_zero:
 	ble $s3, $s4, start_rotate_zero_loop2		# if col index <= 2, loop again
 	j end_rotate								# go to end_rotate
 rotate_once:
+	move $a0, $s0								# $a0 = piece
 	jal check_rotated_I							# check if given piece is I, rotated I or not I	
 	li $t0, 2									# $t0 = 2
 	beq $t0, $v0, cont_check_once				# if $t0 = $v0, then it is not I so cont checking
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_flip						# else if it is I go to rotate_init_flip
 	j end_rotate								# and go to end_rotate
 	# non-rotated piece is given:
 	cont_check_once:
+	move $a0, $s0								# $a0 = piece
 	jal check_rotated_piece						# check if given piece is rotated
 	bltz $v0, invalid_rotation					# if $v0 < 0, it is an invalid piece
 	li $t0, 1
 	beq $t0, $v0, cont_rotate_once				# if $t0 = $v0, then piece is rotated so cont rotating
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_flip						# initialize piece
 	rotate_once_loop1:
 	li $s3, 0									# $s3 = 0
@@ -364,6 +386,9 @@ rotate_once:
 	j end_rotate								# go to end_rotate		
 	# rotated piece is given:	
 	cont_rotate_once:
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_flip						# initialize piece
 	rotate_once_loop2:
 	li $s3, 0									# $s3 = 0
@@ -393,17 +418,25 @@ rotate_once:
 	ble $s3, $s5, start_rotate_once_loop2		# if col index <= 2, loop again
 	j end_rotate								# go to end_rotate
 rotate_twice:
+	move $a0, $s0								# $a0 = piece
 	jal check_rotated_I							# check if given piece is I, rotated I or not I	
 	li $t0, 2									# $t0 = 2
 	beq $t0, $v0, cont_check_twice				# if $t0 = $v0, then it is not I so cont checking
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_original					# else if it is I go to rotate_init_original
 	j end_rotate								# and go to end_rotate
 	# non-rotated piece is given:
 	cont_check_twice:
+	move $a0, $s0								# $a0 = piece
 	jal check_rotated_piece						# check if given piece is rotated
 	bltz $v0, invalid_rotation					# if $v0 < 0, it is an invalid piece
 	li $t0, 1
 	beq $t0, $v0, cont_rotate_twice				# if $t0 = $v0, then piece is rotated so cont rotating
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_original					# initialize piece
 	rotate_twice_loop1:
 	li $s3, 0									# $s3 = 0
@@ -440,6 +473,9 @@ rotate_twice:
 	j end_rotate								# go to end_rotate		
 	# rotated piece is given:	
 	cont_rotate_twice:
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_original					# initialize piece
 	rotate_twice_loop2:
 	li $s3, 0									# $s3 = 0
@@ -469,17 +505,25 @@ rotate_twice:
 	ble $s3, $s5, start_rotate_twice_loop2		# if col index <= 2, loop again
 	j end_rotate								# go to end_rotate
 rotate_thrice:
+	move $a0, $s0								# $a0 = piece
 	jal check_rotated_I							# check if given piece is I, rotated I or not I	
 	li $t0, 2									# $t0 = 2
 	beq $t0, $v0, cont_check_thrice				# if $t0 = $v0, then it is not I so cont checking
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_flip						# else if it is I go to rotate_init_flip
 	j end_rotate								# and go to end_rotate
 	# non-rotated piece is given:
 	cont_check_thrice:
+	move $a0, $s0								# $a0 = piece
 	jal check_rotated_piece						# check if given piece is rotated
 	bltz $v0, invalid_rotation					# if $v0 < 0, it is an invalid piece
 	li $t0, 1
 	beq $t0, $v0, cont_rotate_thrice			# if $t0 = $v0, then piece is rotated so cont rotating
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_flip						# initialize piece 
 	rotate_thrice_loop1:
 	li $s3, 0									# $s3 = 0
@@ -516,6 +560,9 @@ rotate_thrice:
 	j end_rotate								# go to end_rotate		
 	# rotated piece is given:
 	cont_rotate_thrice:
+	move $a0, $s2								# $a0 = rotated_piece
+	move $a1, $s3								# $a1 = num_rows
+	move $a2, $s4								# $a2 = num_cols
 	jal rotate_init_flip						# initialize piece
 	rotate_thrice_loop2:
 	li $s3, 0									# $s3 = 0
@@ -556,67 +603,127 @@ rotate_thrice:
 	lw $s0, 0($sp)
 	addi $sp, $sp, 28
     jr $ra										# go back to where function was called
+
+###################################### FIX HELPER FUNCS ######################################
 # rotate helper functions
 rotate_init_original:
-	move $s5, $ra
+	# allocate memory on stack for 4 regs
+	addi $sp, $sp, -16
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	sw $s2, 8($sp)
+	sw $ra, 12($sp)
+	# declare vars
+	move $s0, $a0								# $s0 = rotated_piece
+	move $s1, $a1								# $s1 = num_rows
+	move $s2, $a2								# $s2 = num_cols
+	# initialize original piece
 	li $t0, 'O'
-	move $a0, $s2								# $a0 = rotated_piece
-	move $a1, $s3								# $a1 = num_rows
-	move $a2, $s4								# $a2 = num_cols
+	move $a0, $s0								# $a0 = rotated_piece
+	move $a1, $s1								# $a1 = num_rows
+	move $a2, $s2								# $a2 = num_cols
 	move $a3, $t0								# $a3 = 'O'
 	jal initialize								# go to initialize piece
-	move $ra, $s5
+	# restore regs from stack
+	lw $ra, 12($sp)
+	lw $s2, 8($sp)
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 16
 	jr $ra										# go back to where function was called
+	
 rotate_init_flip:
-	move $s5, $ra
+	# allocate memory on stack for 4 regs
+	addi $sp, $sp, -16
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	sw $s2, 8($sp)
+	sw $ra, 12($sp)
+	# declare vars
+	move $s0, $a0								# $s0 = rotated_piece
+	move $s1, $a1								# $s1 = num_rows
+	move $s2, $a2								# $s2 = num_cols
+	# initialize original piece
 	li $t0, 'O'
-	move $a0, $s2								# $a0 = rotated_piece
-	move $a1, $s4								# $a1 = num_rows
-	move $a2, $s3								# $a2 = num_cols
+	move $a0, $s0								# $a0 = rotated_piece
+	move $a1, $s2								# $a1 = num_rows
+	move $a2, $s1								# $a2 = num_cols
 	move $a3, $t0								# $a3 = 'O'
 	jal initialize								# go to initialize piece
-	move $ra, $s5
+	# restore regs from stack
+	lw $ra, 12($sp)
+	lw $s2, 8($sp)
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 16
 	jr $ra										# go back to where function was called
+	
 check_rotated_I:
-	move $s5, $ra
+	# allocate memory on stack for 4 registers
+	addi $sp, $sp, -16
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	sw $s2, 8($sp)
+	sw $ra, 12($sp)
+	# declare vars
 	li $t0, 1
 	li $t1, 4
 	li $v0, 0									# $v0 = 0
-	lbu $s3, 0($s0)								# $s3 = num_rows of piece
-	lbu $s4, 1($s0)								# $s4 = num_cols of piece
-	bne $t0, $s3, cont_check_rotated_I			# if num_rows != 1, it can = 4 (rotated I)
-	bne $t1, $s4, cont_check_rotated_I			# if num_cols != 4, it can = 1 (rotated I)
+	move $s0, $a0								# $s0 = piece
+	lbu $s1, 0($s0)								# $s1 = num_rows of piece
+	lbu $s2, 1($s0)								# $s2 = num_cols of piece
+	bne $t0, $s1, cont_check_rotated_I			# if num_rows != 1, it can = 4 (rotated I)
+	bne $t1, $s2, cont_check_rotated_I			# if num_cols != 4, it can = 1 (rotated I)
 	j end_check_rotated_I						# I is not rotated, return 0
 	cont_check_rotated_I:
-	bne $t1, $s3, not_I							# if num_rows != 4, go rotate rest of pieces (bc not I)
-	bne $t0, $s4, not_I							# if num_cols != 1, go rotate rest of pieces (bc not I)
+	bne $t1, $s1, not_I							# if num_rows != 4, go rotate rest of pieces (bc not I)
+	bne $t0, $s2, not_I							# if num_cols != 1, go rotate rest of pieces (bc not I)
 	li $v0, 1									# I is rotated, return 1 
 	j end_check_rotated_I						# go to end_check_rotated_I
 	not_I:
 	li $v0, 2									# piece is not I, return 2
 	end_check_rotated_I:
-	move $ra, $s5	
+	# restore regs from stack
+	lw $ra, 12($sp)
+	lw $s2, 8($sp)
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 16
 	jr $ra										# go back to where function was called
+	
 check_rotated_piece:
-	move $s5, $ra
+	# allocate memory on stack for 4 registers
+	addi $sp, $sp, -16
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	sw $s2, 8($sp)
+	sw $ra, 12($sp)
+	# declare vars
 	li $t0, 2
 	li $t1, 3
 	li $v0, 0									# $v0 = 0
-	lbu $s3, 0($s0)								# $s3 = num_rows of piece
-	lbu $s4, 1($s0)								# $s4 = num_cols of piece
-	bne $t0, $s3, cont_check_rotated_piece		# if num_rows != 2, it can = 3 (rotated piece)
-	bne $t1, $s4, cont_check_rotated_piece		# if num_cols != 3, it can = 2 (rotated piece)
+	move $s0, $a0								# $s0 = piece
+	lbu $s1, 0($s0)								# $s1 = num_rows of piece
+	lbu $s2, 1($s0)								# $2 = num_cols of piece
+	bne $t0, $s1, cont_check_rotated_piece		# if num_rows != 2, it can = 3 (rotated piece)
+	bne $t1, $s2, cont_check_rotated_piece		# if num_cols != 3, it can = 2 (rotated piece)
 	j end_check_rotated_piece					# piece is not rotated, return 0
 	cont_check_rotated_piece:
-	bne $t1, $s3, invalid_piece					# if num_rows != 3, it is not a valid piece
-	bne $t0, $s4, invalid_piece					# if num_cols != 2, it is not a valid piece
+	bne $t1, $s1, invalid_piece					# if num_rows != 3, it is not a valid piece
+	bne $t0, $s2, invalid_piece					# if num_cols != 2, it is not a valid piece
 	li $v0, 1									# piece is rotated, return 1
 	j end_check_rotated_piece
 	invalid_piece:
 	li $v0, -1									# piece is not valid, return -1
 	end_check_rotated_piece:
-	move $ra, $s5		
-	jr $ra										# go back to where function was called
+	# restore regs from stack
+	lw $ra, 12($sp)
+	lw $s2, 8($sp)
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 16	
+	jr $ra										# go back to where function was called	
+##################################################################################################################
 
 # PART VI
 count_overlaps:
@@ -688,12 +795,8 @@ count_overlaps_O:
 	bgtz $t7, count_overlaps_O_loop				# if counter > 0, loop again
 	j end_count_overlaps						# else go to end func
 count_overlaps_I:
-	move $s6, $s0								# $s6 = state (temp)
-	move $s7, $s3								# $s7 = piece (temp)
-	move $s0, $s3								# $s0 = piece (to use check_rotated_I func)
+	move $a0, $s3								# $a0 = piece
 	jal check_rotated_I							# check if I
-	move $s0, $s6								# $s0 = state (original val)
-	move $s3, $s7								# $s3 = piece (original val)
 	li $t0, 2	
 	beq $t0, $v0, count_overlaps_rest			# if $v0 = 2, it is not I so check rest
 	li $t0, 1
@@ -746,12 +849,8 @@ count_overlaps_I_rot:
 	bgtz $t7, count_overlaps_I_rot_loop			# if counter > 0, loop again
 	j end_count_overlaps						# else go to end func
 count_overlaps_rest:
-	move $s6, $s0								# $s6 = state (temp)
-	move $s7, $s3								# $s3 = piece (temp)
-	move $s0, $s3								# $s0 = piece (to use check_rotated_piece func)
+	move $a0, $s3								# $a0 = piece (to use check_rotated_piece func)
 	jal check_rotated_piece						# check if piece is rotated
-	move $s0, $s6								# $s0 = state (original val)
-	move $s3, $s7								# $s3 = piece (original val)
 	bltz $v0, invalid_placement					# if $v0 < 0, it is an invalid piece
 	li $t0, 1
 	beq $t0, $v0, count_overlaps_rest_rot		# if $v0 = 1, it is a rotated piece
@@ -941,12 +1040,8 @@ drop_piece_O:
 	j end_drop_piece							# else end func
 drop_piece_I:
 	# check if piece is I (free to use $s2, $s3, $s5, $s6)
-	move $t8, $s0								# state (temp)
-	move $t9, $s4								# rotated_piece (temp)
-	move $s0, $s4								# $s0 = piece (to use check_rotated_I func)
+	move $a0, $s4								# $s0 = piece (to use check_rotated_I func)
 	jal check_rotated_I							# check if I
-	move $s0, $t8								# $s0 = state (original val)
-	move $s4, $t9								# $s4 = piece (original val)
 	li $t0, 2									
 	beq $t0, $v0, drop_piece_rest				# if $v0 = 2, it is not I so check rest
 	li $t0, 1					
@@ -989,12 +1084,8 @@ drop_piece_I_rot:
 	j end_drop_piece							# else end func
 drop_piece_rest:
 	# piece is not O or I (free to use $s2, $s3, $s5, $s6)
-	move $t8, $s0								# state (temp)
-	move $t9, $s4								# rotated_piece (temp)
-	move $s0, $s4								# $s0 = piece (to use check_rotated_piece func)
+	move $a0, $s4								# $s0 = piece (to use check_rotated_piece func)
 	jal check_rotated_piece						# check if piece is rotated
-	move $s0, $t8								# $s0 = state (original val)
-	move $s4, $t9								# $s4 = piece (original val)
 	bltz $v0, invalid_drop_piece				# if $v0 < 0, it is an invalid piece
 	li $t0, 1									
 	beq $t0, $v0, drop_piece_rest_rot			# if $v0 = 1, it is a rotated piece
@@ -1092,11 +1183,85 @@ drop_piece_rest_rot:
 
 # PART VIII
 check_row_clear:
-	
+	# allocate room on stack for 5 registers
+	addi $sp, $sp, -20
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	sw $s2, 8($sp)
+	sw $s3, 12($sp)
+	sw $ra, 16($sp)
+	# declare vars
+	move $s0, $a0								# $s0 = state
+	move $s1, $a1								# $s1 = row
+	# check if row arg is valid
+	bltz $s1, invalid_row_clear					# if row < 0, it is invalid
+	lbu $s2, 0($s0)								# $s2 = state.num_rows
+	bgt $s1, $s2, invalid_row_clear				# if row > state.num_rows, it is invalid
+	# else check if row can be cleared ($s2 and $s3 free to use)
+	lbu $s2, 1($s0)								# $s2 = state.num_cols (counter for loop)
+	li $t8, 'O'
+	li $t9, 0									# $t9 = col val (for get_slot)
+	check_row_clear_loop:
+	move $a0, $s0								# $a0 = state
+	move $a1, $s1								# $a1 = row val
+	move $a2, $t9								# $a2 = col val
+	jal get_slot								# go to get_slot
+	bne $t8, $v0, row_not_cleared				# if $v0 != 'O' row cannot be cleared
+	addi $t9, $t9, 1							# else increment col val
+	blt $t9, $s2, check_row_clear_loop			# if col val < state.num_cols, loop again
+	j row_cleared_loop_outer								# go to row_cleared
+	row_not_cleared:
+	li $s3, 0									# if row cant be cleared, return val = 0
+	j end_row_clear								# go to end func
+	row_cleared_loop_outer:
+	li $t8, 0
+	lbu $s3, 1($s0)								# $s3 = state.num_cols (counter)
+	row_cleared_loop_inner:
+	addi $t7, $s1, -1							# $t7 = row - 1
+	move $a0, $s0								# $a0 = state
+	move $a1, $t7								# $a1 = row - 1
+	move $a2, $t8								# $a2 = $t8
+	jal get_slot								# go to get_slot
+	move $a0, $s0								# $a0 = state
+	move $a1, $s1								# $a1 = row
+	move $a2, $t8								# $a2 = $t8
+	move $a3, $v0								# $a3 = char from get_slot
+	jal set_slot								# go to set_slot
+	addi $t8, $t8, 1							# increment col val
+	addi $s3, $s3, -1							# decrement counter
+	bgtz $s3, row_cleared_loop_inner			# if $s3 > 0, loop again
+	addi $s1, $s1, -1
+	bgtz $s1, row_cleared_loop_outer
+	# set top row to dots
+	li $t7, 0									# $t7 = col val (for set_slot)
+	lbu $t8, 1($s0)								# $t8 = state.num_cols
+	li $t9, '.'
+	row_cleared_loop:
+	move $a0, $s0								# $a0 = state
+	li $a1, 0									# $a1 = 0 (top row)
+	move $a2, $t7								# $a2 = col val
+	move $a3, $t9								# $a3 = '.'
+	jal set_slot								# go to set_slot
+	addi $t7, $t7, 1							# increment col val
+	blt $t7, $t8, row_cleared_loop				# if $t7 < $t8, loop again
+	li $s3, 1									# if row can be cleared, return val = 1
+	j end_row_clear								# go to end func
+	invalid_row_clear:
+	li $s3, -1
+	end_row_clear:
+	move $v0, $s3
+	# restore regs from stack
+	lw $ra, 16($sp)
+	lw $s3, 12($sp)
+	lw $s2, 8($sp)
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 20
 	jr $ra
 
 # PART IX
 simulate_game:
+	
 	jr $ra
 
 #################### DO NOT CREATE A .data SECTION ####################
