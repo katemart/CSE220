@@ -1265,7 +1265,7 @@ simulate_game:
 	lw $t0, 0($sp)								# $t0 = num_pieces_to_drop from stack
 	lw $t1, 4($sp)								# $t1 = pieces_array from stack
 	# allocate room on stack for registers
-	addi $sp, $sp, -36
+	addi $sp, $sp, -48
 	sw $s0, 0($sp)
 	sw $s1, 4($sp)
 	sw $s2, 8($sp)
@@ -1274,7 +1274,10 @@ simulate_game:
 	sw $s5, 20($sp)
 	sw $s6, 24($sp)
 	sw $s7, 28($sp)
-	sw $ra, 32($sp)
+	sw $t0, 32($sp)
+	sw $t1, 36($sp)
+	sw $t2, 40($sp)
+	sw $ra, 44($sp)
 	# declare vars
 	move $s0, $a0								# $s0 = state
 	move $s1, $a1								# $s1 = filename
@@ -1284,12 +1287,27 @@ simulate_game:
 	move $s5, $t1								# $s5 = pieces_array
 	li $s6, 0									# $s6 = num of successfully dropped pieces
 	li $s7, 0									# $s7 = score
+	# start algorithm
+	# check that file is valid:
+	move $a0, $s0								# $a0 = state
+	move $a1, $s1								# $a1 = filename
+	jal load_game								# go to load_game
+	li $t3, -1
+	beq $t3, $v0, simulate_invalid_file			# if $v0 = -1, return 0
+	beq $t3, $v1, simulate_invalid_file			# if $v1 = -1, return 0
 	
 	
-	
-	
+	simulate_invalid_file:
+	li $s6, 0
+	li $s7, 0
+	end_simulate_game:
+	move $v0, $s6
+	move $v1, $s7
 	# restore regs from stack
-	lw $ra, 32($sp)
+	lw $ra, 44($sp)
+	lw $t2, 40($sp)
+	lw $t1, 36($sp)
+	lw $t0, 32($sp)
 	lw $s7, 28($sp)
 	lw $s6, 24($sp)
 	lw $s5, 20($sp)
@@ -1298,7 +1316,7 @@ simulate_game:
 	lw $s2, 8($sp)
 	lw $s1, 4($sp)
 	lw $s0, 0($sp)
-	addi $sp, $sp, 36
+	addi $sp, $sp, 48
 	jr $ra
 
 #################### DO NOT CREATE A .data SECTION ####################
