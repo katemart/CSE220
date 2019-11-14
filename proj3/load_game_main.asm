@@ -1,6 +1,6 @@
 .data
 state: .space 1000  # way more space than we really need; not null-terminated during grading!
-filename: .asciiz "game.txt"  # you will likely need to put MARS into the same folder as this main file
+filename: .asciiz "game5.txt"  # you will likely need to put MARS into the same folder as this main file
 
 .text
 main:
@@ -52,6 +52,27 @@ syscall
 li $v0, 11
 li $a0, '\n'
 syscall
+
+###################################### PRINT 2D ######################################
+la $t0, state
+lbu $t1, 0($t0)
+lbu $t2, 1($t0)
+addi $t0, $t0, 2
+outerloop:
+move $t3, $t2
+innerloop:
+li $v0, 11
+lbu $a0, 0($t0)
+syscall
+addi $t3, $t3, -1
+addi $t0, $t0, 1
+bgtz $t3, innerloop
+li $v0, 11
+li $a0, '\n'
+syscall
+addi $t1, $t1, -1
+bgtz $t1, outerloop
+#######################################################################################
 
 li $v0, 10
 syscall
