@@ -942,7 +942,7 @@ drop_piece_I:
 	# check if piece is I (free to use $s2, $s3, $s5, $s6)
 	move $t8, $s0								# state (temp)
 	move $t9, $s4								# rotated_piece (temp)
-	move $s0, $s4								# $s0 = piece (to use check_rotated_piece func)
+	move $s0, $s4								# $s0 = piece (to use check_rotated_I func)
 	jal check_rotated_I							# check if I
 	move $s0, $t8								# $s0 = state (original val)
 	move $s4, $t9								# $s4 = piece (original val)
@@ -958,7 +958,7 @@ drop_piece_I:
 	move $a2, $s5								# $a2 = $s5
 	jal get_slot								# go to get_slot
 	move $a0, $s0								# $a0 = state
-	move $a1, $s7								# $a1 = $s7
+	move $a1, $s7								# $a1 = row val
 	move $a2, $s1								# $a2 = col val
 	move $a3, $v0								# $a3 = char from get_slot
 	jal set_slot								# go to get_slot
@@ -968,11 +968,104 @@ drop_piece_I:
 	bgtz $s6, drop_piece_I_loop					# if $s6 > 0, loop again
 	j end_drop_piece							# else end func
 drop_piece_I_rot:
-	
-	
-	drop_piece_rest:
-	
-	
+	li $s5, 0									# val for row (for get_slot)
+	li $s6, 4									# counter for loop
+	move $t8, $s7								# $t8 = row val (temp)
+	drop_piece_I_rot_loop:
+	move $a0, $s4								# $a0 = rotated_piece
+	move $a1, $s5								# $a1 = $s5
+	li $a2, 0									# $a2 = 0
+	jal get_slot								# go to get_slot
+	move $a0, $s0								# $a0 = state
+	move $a1, $t8								# $a1 = row val
+	move $a2, $s1								# $a2 = col val
+	move $a3, $v0								# $a3 = char from get_slot
+	jal set_slot								# go to set_slot
+	addi $s5, $s5, 1							# increment row index (for get_slot)
+	addi $t8, $t8, 1							# increment row index (for set_slot)
+	addi $s6, $s6, -1							# counter--
+	bgtz $s6, drop_piece_I_rot_loop				# if $s6 > 0, loop again
+	j end_drop_piece							# else end func
+drop_piece_rest:
+	# piece is not O or I (free to use $s2, $s3, $s5, $s6)
+	move $t8, $s0								# state (temp)
+	move $t9, $s4								# rotated_piece (temp)
+	move $s0, $s4								# $s0 = piece (to use check_rotated_piece func)
+	jal check_rotated_piece						# check if piece is rotated
+	move $s0, $t8								# $s0 = state (original val)
+	move $s4, $t9								# $s4 = piece (original val)
+	bltz $v0, invalid_drop_piece				# if $v0 < 0, it is an invalid piece
+	li $t0, 1									
+	beq $t0, $v0, drop_piece_rest_rot			# if $v0 = 1, it is a rotated piece
+	li $s5, 0									# val for col (for get_slot)
+	li $s6, 6									# counter for loop
+	addi $t8, $s7, 1							# $t8 = row val + 1
+	li $t9, 'O'
+	drop_piece_rest_loop:
+	move $a0, $s4								# $a0 = rotated_piece
+	li $a1, 0									# $a1 = 0
+	move $a2, $s5								# $a2 = $s5
+	jal get_slot								# go to get_slot
+	bne $t9, $v0, drop_piece_rest_loop_next		# if $v0 != 'O', check next
+	move $a0, $s0								# $a0 = state
+	move $a1, $s7								# $a1 = row val
+	move $a2, $s1								# $a2 = col val
+	move $a3, $v0								# $a3 = char from get_slot
+	jal set_slot								# go to set_slot
+	drop_piece_rest_loop_next:
+	move $a0, $s4								# $a0 = rotated_piece
+	li $a1, 1									# $a1 = 0
+	move $a2, $s5								# $a2 = $s5
+	jal get_slot								# go to get_slot
+	bne $t9, $v0, drop_piece_rest_loop_cont		# if $v0 != 'O', continue to next 2
+	move $a0, $s0								# $a0 = state
+	move $a1, $t8								# $a1 = row val
+	move $a2, $s1								# $a2 = col val
+	move $a3, $v0								# $a3 = char from get_slot
+	jal set_slot								# go to set_slot
+	drop_piece_rest_loop_cont:
+	addi $s1, $s1, 1							# increment col index (for set_slot)
+	addi $s5, $s5, 1							# increment col index (for get_slot)
+	addi $s6, $s6, -2							# counter--
+	bgtz $s6, drop_piece_rest_loop				# if $s6 > 0, loop again
+	j end_drop_piece							# else end func
+drop_piece_rest_rot:	
+	li $s5, 0									# val for col (for get_slot)
+	li $s6, 6									# counter for loop
+	addi $t7, $s1, 1							# $t7 = col val + 1
+	move $t8, $s7								# $t8 = row val (temp)
+	li $t9, 'O'
+	drop_piece_rest_rot_loop:
+	move $a0, $s4								# $a0 = rotated_piece
+	move $a1, $s5								# $a1 = $s5
+	li $a2, 0									# $a2 = 0
+	jal get_slot								# go to get_slot
+	bne $t9, $v0, drop_piece_rest_rot_loop_next	# if $v0 != 'O', check next
+	move $a0, $s0								# $a0 = state
+	move $a1, $t8								# $a1 = row val
+	move $a2, $s1								# $a2 = col val
+	move $a3, $v0								# $a3 = char from get_slot
+	jal set_slot								# go to set_slot
+	drop_piece_rest_rot_loop_next:
+	move $a0, $s4								# $a0 = rotated_piece
+	move $a1, $s5								# $a1 = $s5
+	li $a2, 1									# $a2 = 1
+	jal get_slot								# go to get_slot
+	bne $t9, $v0, drop_piece_rest_rot_loop_cont	# if $v0 != 'O', check next
+	move $a0, $s0								# $a0 = state
+	move $a1, $t8								# $a1 = row val
+	move $a2, $t7								# $a2 = col val
+	move $a3, $v0								# $a3 = char from get_slot
+	jal set_slot								# go to set_slot
+	drop_piece_rest_rot_loop_cont:
+	addi $s5, $s5, 1							# increment row index (for get_slot)
+	addi $t8, $t8, 1							# increment row index (for set_slot)
+	addi $s6, $s6, -2							# counter--
+	bgtz $s6, drop_piece_rest_rot_loop			# if $s6 > 0, loop again
+	j end_drop_piece							# else end func
+	invalid_drop_piece:
+	li $s7, -69									# row num = -69 (invalid piece)
+	j end_drop_piece							# go to end_drop_piece
 	invalid_drop_args:
 	li $s7, -2									# row num = -2 (invalid cols)
 	j end_drop_piece							# go to end_drop_piece
