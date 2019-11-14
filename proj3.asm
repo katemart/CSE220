@@ -697,7 +697,7 @@ count_overlaps_I:
 	li $t0, 2	
 	beq $t0, $v0, count_overlaps_rest			# if $v0 = 2, it is not I so check rest
 	li $t0, 1
-	beq $t0, $t1, count_overlaps_I_rot			# if $t1 = 1, it is a rotated I
+	beq $t0, $v0, count_overlaps_I_rot			# if $t1 = 1, it is a rotated I
 	# check that non-rotated I fits
 	addi $t0, $s2, 3							# $t0 = col + 3
 	lbu $s4, 1($s0)								# $s4 = num_cols of state
@@ -911,11 +911,10 @@ drop_piece:
 	lbu $s6, 1($s4)								# rotated_piece.num_cols
 	bne $t0, $s5, drop_piece_I					# if rotated_piece.num_rows != 2, check if I
 	bne $t0, $s6, drop_piece_I					# if rotated_piece.num_cols != 2, check if I
-	drop_piece_O:
+drop_piece_O:
 	li $s5, 0									# val for col (for get_slot)
-	li $s6, 1									# value for loop
+	li $s6, 1									# counter for loop
 	addi $t8, $s7, 1							# $t8 = row + 1
-	#addi $t9, $s1, 1							# $t9 = col + 1
 	drop_piece_O_loop:
 	move $a0, $s4								# $a0 = rotated_piece
 	li $a1, 0									# $a1 = 0
@@ -939,9 +938,39 @@ drop_piece:
 	addi $s5, $s5, 1							# increment col index (for get_slot)
 	ble $s5, $s6, drop_piece_O_loop				# if col index <= 1, loop again
 	j end_drop_piece							# else end func
-	drop_piece_I:
+drop_piece_I:
+	# check if piece is I (free to use $s2, $s3, $s5, $s6)
+	move $t8, $s0								# state (temp)
+	move $t9, $s4								# rotated_piece (temp)
+	move $s0, $s4								# $s0 = piece (to use check_rotated_piece func)
+	jal check_rotated_I							# check if I
+	move $s0, $t8								# $s0 = state (original val)
+	move $s4, $t9								# $s4 = piece (original val)
+	li $t0, 2									
+	beq $t0, $v0, drop_piece_rest				# if $v0 = 2, it is not I so check rest
+	li $t0, 1					
+	beq $t0, $v0, drop_piece_I_rot				# if $v0 = 1, it is a rotated I
+	li $s5, 0									# val for col (for get_slot)
+	li $s6, 4									# counter for loop
+	drop_piece_I_loop:
+	move $a0, $s4								# $a0 = rotated_piece
+	li $a1, 0									# $a1 = 0
+	move $a2, $s5								# $a2 = $s5
+	jal get_slot								# go to get_slot
+	move $a0, $s0								# $a0 = state
+	move $a1, $s7								# $a1 = $s7
+	move $a2, $s1								# $a2 = col val
+	move $a3, $v0								# $a3 = char from get_slot
+	jal set_slot								# go to get_slot
+	addi $s1, $s1, 1							# increment col index (for set_slot)
+	addi $s5, $s5, 1							# increment col index (for get_slot)
+	addi $s6, $s6, -1							# counter--
+	bgtz $s6, drop_piece_I_loop					# if $s6 > 0, loop again
+	j end_drop_piece							# else end func
+drop_piece_I_rot:
 	
 	
+	drop_piece_rest:
 	
 	
 	invalid_drop_args:
