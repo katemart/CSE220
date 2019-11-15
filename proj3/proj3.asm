@@ -50,7 +50,7 @@ load_game:
 	# open file to read
 	li $v0, 13									# syscall for open file
 	move $a0, $s1								# $a0 = file name
-	li $a1, 0									# $$a1 = 0 (read only flag)
+	li $a1, 0									# $a1 = 0 (read only flag)
 	li $a2, 0									# mode is ignored
 	syscall
 	move $s2, $v0								# $s2 = file descriptor
@@ -81,7 +81,8 @@ load_game:
 	move $a1, $sp								# $a1 = buffer (which is $sp)
 	li $a2, 1									# $a2 = read one char at a time
 	syscall
-	blez $v0, load_file_error
+	beqz $v0, end_of_file
+	bltz $v0, load_file_error
 	lbu $t6, 0($sp)
 	beqz $t6, end_of_file
 	beq $t0, $t6, read_chars_loop				# if $t4 = \n, read next
@@ -134,7 +135,8 @@ read_digits:
 	move $a1, $sp								# $a1 = buffer (which is $sp)
 	li $a2, 1									# $a2 = read one char at a time
 	syscall
-	blez $v0, num_reading_error					# if $v0 <= 0, something went wrong
+	beqz $v0, end_read_num						# if $v0 = 0, end of file
+	bltz $v0, num_reading_error					# if $v0 < 0, something went wrong
 	lbu $t0, 0($sp)								# $t0 = first char
 	addi $t0, $t0, -48							# to convert to dec (first digit)
 	# get second digit
@@ -167,6 +169,9 @@ read_digits:
 	end_read_num:
 	jr $ra										# return to where the function was called
 
+# FORMULA FOR PARTS III AND IV:
+# ((row * col_num) + col) * element_size which is 1 so, (($a1 * $t1) + $a2) * 1
+
 # PART III
 get_slot:
 	# check that row is within range
@@ -177,9 +182,6 @@ get_slot:
 	bltz $a2, gs_invalid_range					# if col < 0, it is invalid
 	lbu $t1, 1($a0)								# $t1 = num_cols from struct
 	bge $a2, $t1, gs_invalid_range				# if num_cols => col, it is invalid
-	# get value for slot
-	# formula: ((row * col_num) + col) * element_size which is 1
-	# so, (($a1 * $t1) + $a2) * 1
 	mul $t2, $a1, $t1							# $t2 = row * num_cols
 	add $t2, $t2, $a2							# $t2 = (row * num_cols) + col
 	addi $a0, $a0, 2							# $a0 = baseaddr struct + 2 (bc row_num & col_num at beg)
@@ -201,9 +203,6 @@ set_slot:
 	bltz $a2, ss_invalid_range					# if col < 0, it is invalid
 	lbu $t1, 1($a0)								# $t1 = num_cols from struct
 	bge $a2, $t1, ss_invalid_range				# if num_cols => col, it is invalid
-	# set value for slot
-	# formula: ((row * col_num) + col) * element_size which is 1
-	# so, (($a1 * $t1) + $a2) * 1
 	mul $t2, $a1, $t1							# $t2 = row * num_cols
 	add $t2, $t2, $a2							# $t2 = (row * num_cols) + col
 	addi $a0, $a0, 2							# $a0 = baseaddr struct + 2 (bc row_num & col_num at beg)
@@ -728,7 +727,7 @@ check_rotated_piece:
 # PART VI
 count_overlaps:
 	# allocate room on stack for 9 registers
-	addi $sp, $sp, -36
+	addi $sp, $sp, -32
 	sw $s0, 0($sp)
 	sw $s1, 4($sp)
 	sw $s2, 8($sp)
@@ -736,8 +735,7 @@ count_overlaps:
 	sw $s4, 16($sp)
 	sw $s5, 20($sp)
 	sw $s6, 24($sp)
-	sw $s7, 28($sp)
-	sw $ra, 32($sp)
+	sw $ra, 28($sp)
 	# declare vars
 	move $s0, $a0								# $s0 = state
 	move $s1, $a1								# $s1 = row
@@ -769,7 +767,7 @@ count_overlaps_O:
 	li $t6, 'O'
 	li $t7, 4									# counter
 	addi $t8, $s1, 1							# $t8 = row + 1
-	li $s7, 0									# return val
+	li $s6, 0									# return val
 	count_overlaps_O_loop:
 	lbu $s5, 2($s3)								# third char of piece
 	bne $s5, $t6, count_overlaps_O_loop_cont	# if $s5 != 'O' check next char
@@ -778,7 +776,7 @@ count_overlaps_O:
 	move $a2, $s2								# $a2 = col
 	jal get_slot								# go to get_slot
 	bne $s5, $v0, count_overlaps_O_loop_cont	# if $s5 != $v0, check next
-	addi $s7, $s7, 1							# else returnval++
+	addi $s6, $s6, 1							# else returnval++
 	count_overlaps_O_loop_cont:
 	lbu $s5, 4($s3)								# fifth char of piece
 	bne $s5, $t6, count_overlaps_O_loop_next	# if $s5 != 'O' check next char
@@ -787,7 +785,7 @@ count_overlaps_O:
 	move $a2, $s2								# $a2 = col
 	jal get_slot								# go to get_slot
 	bne $s5, $v0, count_overlaps_O_loop_next	# if $s5 != $v0, check next
-	addi $s7, $s7, 1							# else returnval++
+	addi $s6, $s6, 1							# else returnval++
 	count_overlaps_O_loop_next:
 	addi $s2, $s2, 1							# col++
 	addi $s3, $s3, 1							# go to next char of piece
@@ -805,10 +803,10 @@ count_overlaps_I:
 	addi $t0, $s2, 3							# $t0 = col + 3
 	lbu $s4, 1($s0)								# $s4 = num_cols of state
 	bge $t0, $s4, invalid_placement				# if (col + 3) => num_cols of state, invalid placement
-	# if non-rotated I fits, count the overlaps (free to use $s4, $s5, $s6, $s7)
+	# if non-rotated I fits, count the overlaps
 	li $t6, 'O'
 	li $t7, 4									# counter
-	li $s7, 0									# return val
+	li $s6, 0									# return val
 	count_overlaps_I_loop:
 	lbu $s5, 2($s3)								# third char of piece
 	bne $s5, $t6, count_overlaps_I_loop_next	# if $s5 != 'O' check next char
@@ -817,7 +815,7 @@ count_overlaps_I:
 	move $a2, $s2								# $a2 = col
 	jal get_slot								# go to get_slot
 	bne $s5, $v0, count_overlaps_I_loop_next	# if $s5 != $v0, check next
-	addi $s7, $s7, 1							# else returnval++							
+	addi $s6, $s6, 1							# else returnval++							
 	count_overlaps_I_loop_next:
 	addi $s2, $s2, 1							# col++
 	addi $s3, $s3, 1							# go to next char of piece
@@ -829,10 +827,10 @@ count_overlaps_I_rot:
 	addi $t0, $s1, 3							# $t0 = row + 3
 	lbu $s4, 0($s0)								# $s4 = num_rows of state
 	bge $t0, $s4, invalid_placement				# if (row + 3) => num_rows of state, invalid placement
-	# if rotated I fits, count the overlaps (free to use $s4, $s5, $s6, $s7)
+	# if rotated I fits, count the overlaps 
 	li $t6, 'O'
 	li $t7, 4									# counter
-	li $s7, 0									# return val
+	li $s6, 0									# return val
 	count_overlaps_I_rot_loop:
 	lbu $s5, 2($s3)								# third char of piece
 	bne $s5, $t6, count_overlaps_I_rot_loop_next# if $s5 != 'O' check next char
@@ -841,7 +839,7 @@ count_overlaps_I_rot:
 	move $a2, $s2								# $a2 = col
 	jal get_slot								# go to get_slot
 	bne $s5, $v0, count_overlaps_I_rot_loop_next# if $s5 != $v0, check next
-	addi $s7, $s7, 1							# else returnval++
+	addi $s6, $s6, 1							# else returnval++
 	count_overlaps_I_rot_loop_next:
 	addi $s1, $s1, 1							# row++
 	addi $s3, $s3, 1							# go to next char of piece
@@ -861,11 +859,11 @@ count_overlaps_rest:
 	lbu $s5, 1($s0)								# $s5 = num_cols of state
 	bge $t0, $s4, invalid_placement				# if (row + 1) => num_rows of state, invalid placement
 	bge $t1, $s5, invalid_placement				# if (col + 2) => num_cols of state, invalid placement
-	# if rotated piece fits, count the overlaps (free to use $s4, $s5, $s6, $s7)
+	# if rotated piece fits, count the overlaps
 	li $t6, 'O'
 	li $t7, 6									# counter
 	addi $t8, $s1, 1							# $t8 = row + 1
-	li $s7, 0									# return val
+	li $s6, 0									# return val
 	count_overlaps_rest_loop:
 	lbu $s5, 2($s3)								# third char of piece
 	bne $s5, $t6, count_overlaps_rest_loop_cont	# if $s5 != 'O' check next char
@@ -874,7 +872,7 @@ count_overlaps_rest:
 	move $a2, $s2								# $s2 = col
 	jal get_slot								# go to get_slot
 	bne $s5, $v0, count_overlaps_rest_loop_cont	# if $s5 != $v0, check next
-	addi $s7, $s7, 1							# else returnval++
+	addi $s6, $s6, 1							# else returnval++
 	count_overlaps_rest_loop_cont:
 	lbu $s5, 5($s3)								# sixth char of piece
 	bne $s5, $t6, count_overlaps_rest_loop_next	# if $s5 != 'O' check next char
@@ -883,7 +881,7 @@ count_overlaps_rest:
 	move $a2, $s2								# $a2 = col
 	jal get_slot								# go to get_slot
 	bne $s5, $v0, count_overlaps_rest_loop_next	# if $s5 != $v0, check next
-	addi $s7, $s7, 1							# else returnval++
+	addi $s6, $s6, 1							# else returnval++
 	count_overlaps_rest_loop_next:
 	addi $s2, $s2, 1							# col++
 	addi $s3, $s3, 1							# go to next char of piece
@@ -898,11 +896,11 @@ count_overlaps_rest_rot:
 	lbu $s5, 1($s0)								# $s5 = num_cols of state
 	bge $t0, $s4, invalid_placement				# if (row + 2) => num_rows of state, invalid placement
 	bge $t1, $s5, invalid_placement				# if (col + 1) => num_cols of state, invalid placement
-	# if rotated piece fits, count the overlaps (free to use $s4, $s5, $s6, $s7)
+	# if rotated piece fits, count the overlaps
 	li $t6, 'O'
 	li $t7, 6									# counter
 	addi $t8, $s2, 1							# $t8 = col + 1
-	li $s7, 0									# return val
+	li $s6, 0									# return val
 	count_overlaps_rest_rot_loop:
 	lbu $s5, 2($s3)								# third char of piece
 	bne $s5, $t6, count_overlaps_rest_rot_loop_cont # if $s5 != 'O' check next char
@@ -911,7 +909,7 @@ count_overlaps_rest_rot:
 	move $a2, $s2								# $a2 = col
 	jal get_slot								# go to get_slot
 	bne $s5, $v0, count_overlaps_rest_rot_loop_cont # if $s5 != $v0, check next
-	addi $s7, $s7, 1							# else returnval++
+	addi $s6, $s6, 1							# else returnval++
 	count_overlaps_rest_rot_loop_cont:
 	lbu $s5, 3($s3)								# fourth char of piece
 	bne $s5, $t6, count_overlaps_rest_rot_loop_next # if $s5 != 'O' check next char
@@ -920,7 +918,7 @@ count_overlaps_rest_rot:
 	move $a2, $t8								# $a2 = col + 1
 	jal get_slot								# go to get_slot
 	bne $s5, $v0, count_overlaps_rest_rot_loop_next # if $s5 != $v0, check next
-	addi $s7, $s7, 1							# else returnval++
+	addi $s6, $s6, 1							# else returnval++
 	count_overlaps_rest_rot_loop_next:
 	addi $s1, $s1, 1							# row++
 	addi $s3, $s3, 2							# go to next 2 chars of piece
@@ -928,12 +926,11 @@ count_overlaps_rest_rot:
 	bgtz $t7, count_overlaps_rest_rot_loop		# if counter > 0, loop again
 	j end_count_overlaps						# else go to end func
 	invalid_placement:
-	li $s7, -1									# num of overlaps = -1
+	li $s6, -1									# num of overlaps = -1
 	end_count_overlaps:	
-	move $v0, $s7								# $v0 = num of overlaps
+	move $v0, $s6								# $v0 = num of overlaps
 	# restore regs from stack
-	lw $ra, 32($sp)
-	lw $s7, 28($sp)
+	lw $ra, 28($sp)
 	lw $s6, 24($sp)
 	lw $s5, 20($sp)
 	lw $s4, 16($sp)
@@ -941,7 +938,7 @@ count_overlaps_rest_rot:
 	lw $s2, 8($sp)
 	lw $s1, 4($sp)
 	lw $s0, 0($sp)
-	addi $sp, $sp, 36
+	addi $sp, $sp, 32
 	jr $ra										# go back to where function was called
 
 # PART VII
@@ -1364,7 +1361,6 @@ simulate_game:
 	# if it is none of the above, it is I
 	addi $s1, $s1, 48							# $s1 = 'I' from piece_array
 	j simulate_drop_cont						# go to simulate_drop_cont
-	
 	# attempt to drop piece
 	simulate_drop_cont:
 	move $a0, $s0								# $a0 = state
