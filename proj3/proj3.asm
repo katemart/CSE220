@@ -1264,7 +1264,7 @@ simulate_game:
 	lw $t0, 0($sp)								# $t0 = num_pieces_to_drop from stack
 	lw $t1, 4($sp)								# $t1 = pieces_array from stack
 	# allocate room on stack for registers
-	addi $sp, $sp, -48
+	addi $sp, $sp, -64
 	sw $s0, 0($sp)
 	sw $s1, 4($sp)
 	sw $s2, 8($sp)
@@ -1276,7 +1276,11 @@ simulate_game:
 	sw $t0, 32($sp)
 	sw $t1, 36($sp)
 	sw $t2, 40($sp)
-	sw $ra, 44($sp)
+	sw $t3, 44($sp)
+	sw $t4, 48($sp)
+	sw $t5, 52($sp)
+	sw $t6, 56($sp)
+	sw $ra, 60($sp)
 	# declare vars
 	move $s0, $a0								# $s0 = state
 	move $s1, $a1								# $s1 = filename
@@ -1285,35 +1289,93 @@ simulate_game:
 	move $s4, $t0								# $s4 = num_pieces_to_drop
 	move $s5, $t1								# $s5 = pieces_array
 	# start algorithm
-	# check that file is valid:
+	# check that file is valid
 	move $a0, $s0								# $a0 = state
 	move $a1, $s1								# $a1 = filename
 	jal load_game								# go to load_game
-	li $t3, -1
-	beq $t3, $v0, simulate_invalid_file			# if $v0 = -1, return 0
-	beq $t3, $v1, simulate_invalid_file			# if $v1 = -1, return 0
-	# declare more vars:
+	li $t7, -1
+	beq $t7, $v0, simulate_invalid_file			# if $v0 = -1, return 0
+	beq $t7, $v1, simulate_invalid_file			# if $v1 = -1, return 0
+	# declare more vars
 	li $s6, 0									# $s6 = num of successfully dropped pieces
 	li $t0, 0									# $t0 = move_number
-	# calculate moves length
+	# calculate len(moves)
 	move $a0, $s2								# $a0 = moves
-	jal strlen
-	li $t3, 4
-	div $v0, $t3								# divide moves by 4
+	jal strlen									# go to strlen
+	li $t7, 4
+	div $v0, $t7								# divide moves by 4
 	mflo $t1									# $t1 = moves_length (can reuse after this?)
+	# declare more vars
 	li $t2, 0									# $t2 = game_over FALSE												
 	li $s7, 0									# $s7 = score
-	# start loop:
+# start loop
+	simulate_game_loop:
 	bnez $t2, end_simulate_game					# if game_over = TRUE, end game
 	bge $s6, $s4, end_simulate_game				# if num_successful_drops => num_pieces_to_drop, end game
 	bge $t0, $t1, end_simulate_game				# if move_number => moves_length, end game
+	# extract the piece, col, and rotation from string
+	lbu $t3, 0($s2)								# $t3 = piece_type
+	lbu $t4, 1($s2)								# $t4 = rotation
+	lbu $t5, 2($s2)								# $t5 = first col digit
+	addi $t5, $t5, -48							# convert from ascii to dec
+	bnez $t5, two_dig_col						# if first dig != 0, it is 2 digits
+	lbu $t5, 3($s2)								# else $t5 = one digit col
+	addi $t5, $t5, -48							# convert from ascii to dec
+	j sim_end_extraction
+	two_dig_col:
+	lbu $t7, 3($s2)								# col second digit
+	addi $t7, $t7, -48							# convert from ascii to dec
+	li $t8, 10
+	mul $t5, $t5, $t8							# $t5 = first digit * 10
+	add $t5, $t5, $t7							# $t5 = two digit col
+	sim_end_extraction:
+	li $t6, 0									# $t6 = invalid FALSE
+	# determine piece type
+	li $t7, 'T'	
+	bne $t3, $t7, piece_not_T					# if $t3 != 'T', check if 'J'
+	move $a0, $t3								# $a0 = pieces_array
+	li $a1, 0									# $a1 = 0
+	jal simulate_get_piece						# go to simulate_get_piece
+	j simulate_drop_cont						# go to simulate_drop_cont
+	piece_not_T:	
+	
+	
+	
+	
+	
+	
+	
+	# attempt to drop piece
+	simulate_drop_cont:
 	move $a0, $s0								# $a0 = state
-	move $a1, $s2								# $a1 = moves
-	move $a2, $s3								# $a2 = rotated_piece
-	jal simulate_drop_piece						# go to simulate_drop_piece	
+	move $a1, $t5								# $a1 = col
+	move $a2, $v0								# $a2 = piece
+	move $a3, $t4								# $a3 = rotation
+	addi $sp, $sp, -4	
+	sw $s3, 0($sp)								# save rotated_piece on stack
+	jal drop_piece								# go to drop_piece
+	addi $sp, $sp, 4
+	li $t7, -3
+	li $t8, -2
+	li $t9, -1
+	beq $t7, $v0, simulate_drop_end				# if $v0 = -3, set invalid TRUE 
+	beq $t8, $v0, simulate_drop_end				# if $v0 = -2, set invalid TRUE 
+	beq $t9, $v0, simulate_drop_end_game		# if $v0 = -1, set invalid TRUE 
+	j simulate_check_invalid
+	simulate_drop_end_game:
+	li $t2, 1									# game over FALSE
+	simulate_drop_end:
+	li $t6, 1									# invalid TRUE
+	# check if invalid is true
+	simulate_check_invalid:
+	li $t7, 1
+	beq $t6, $t7, simulate_game_loop_cont
+	# check for line clears
 	
 	
 	
+	simulate_game_loop_cont:
+	addi $t0, $t0, 1							# move_number += 1
 	
 	simulate_invalid_file:
 	li $s6, 0
@@ -1322,7 +1384,11 @@ simulate_game:
 	move $v0, $s6
 	move $v1, $s7
 	# restore regs from stack
-	lw $ra, 44($sp)
+	lw $ra, 60($sp)
+	lw $t6, 56($sp)
+	lw $t5, 52($sp)
+	lw $t4, 48($sp)
+	lw $t3, 44($sp)
 	lw $t2, 40($sp)
 	lw $t1, 36($sp)
 	lw $t0, 32($sp)
@@ -1334,85 +1400,37 @@ simulate_game:
 	lw $s2, 8($sp)
 	lw $s1, 4($sp)
 	lw $s0, 0($sp)
-	addi $sp, $sp, 48
+	addi $sp, $sp, 64
 	jr $ra										# go back to where function was called
 
 # simulate helper functions:
 strlen:
-	# allocate room on stack for registers
-	addi $sp, $sp, -8
-	sw $s0, 0($sp)
-	sw $s1, 4($sp)
-	# declare var
-	li $s0, 0							# length = 0							
+	li $t0, 0									# length = 0
 	strlen_loop:
-	lbu $s1, 0($a0)						# $s1 = str[i]
-	beqz $s1, end_strlen				# if str[i] = 0, go to end_strlen
-	addi $s0, $s0, 1					# else length++
-	addi $a0, $a0, 1					# and go to next char
-	j strlen_loop						# and loop again
+	lbu $t1, 0($a0)								# $t1 = str[i]
+	beqz $t1, end_strlen						# if str[i] = 0, go to end_strlen
+	addi $t0, $t0, 1							# else length++
+	addi $a0, $a0, 1							# and go to next char
+	j strlen_loop								# and loop again
 	end_strlen:
-	move $v0, $s0						# $v0 = $s0
-	# restore regs from stack
-	lw $s1, 4($sp)
-	lw $s0, 0($sp)
-	addi $sp, $sp, 8
-    jr $ra								# return to where func was called
-
-simulate_drop_piece:
-	# allocate room on stack for registers
-	addi $sp, $sp, -36
-	sw $s0, 0($sp)
-	sw $s1, 4($sp)
-	sw $s2, 8($sp)
-	sw $s3, 12($sp)
-	sw $s4, 16($sp)
-	sw $s5, 20($sp)
-	sw $s6, 24($sp)
-	sw $s7, 28($sp)
-	sw $ra, 32($sp)
-	# declare vars
-	move $s0, $a0								# $s0 = state
-	move $s1, $a1								# $s1 = moves
-	move $s2, $a2								# #s2 = rotated_piece
-	# extract piece, col, and rotation:
-	lbu $s3, 0($s1)								# $s3 = piece_type
-	lbu $s4, 1($s1)								# $s4 = rotation
-	lbu $s5, 2($s1)								# $s5 = first col digit
-	addi $s5, $s5, -48							# to convert from ascii to dec
-	bnez $s5, two_dig_col						# if first dig != 0, it is 2 digits
-	lbu $s5, 3($s1)								# else, $s5 = one digit col
-	addi $s5, $s5, -48							# to convert from ascii to dec
-	j sim_end_extraction
-	two_dig_col:
-	lbu $t0, 3($s1)								# $t0 = col second digit
-	addi $t0, $t0, -48							# to convert from ascii to dec
-	li $t1, 10									
-	mul $s5, $s5, $t1							# $s5 = first digit * 10
-	add $s5, $s5, $t0							# $s5 = two digit col
-	sim_end_extraction:
-	li $s6, 0									# $s6 = invalid FALSE
-	# determine piece type:
-	sim_drop_piece:
-	li $t0, 'T'
-	bne $t0, $s3, piece_not_T					# if $s3 != 'T', check next
+	move $v0, $t0								# $v0 = $t0
+    jr $ra										# return to where func was called
 	
-	piece_not_T:
+simulate_get_piece:
+	move $t0, $a0								# $t0 = pieces_array
+	move $t1, $a1								# $t1 = num passed
+	sim_get_piece_loop:
+	blez $t1, end_sim_get_piece_loop
+	lbu $t2, 0($t0)
+	lbu $t3, 1($t0)
+	mul $t4, $t2, $t3							# $t4 = row * col
+	addi $t4, $t4, 2							# $t4 = $t4 + 2
+	add $t0, $t0, $t4							# $t0 = baseaddr + $t4
+	addi $t1, $t1, -1
+	j sim_get_piece_loop
+	end_sim_get_piece_loop:
+	move $v0, $t0
 	
-	
-	
-	# restore regs from stack
-	lw $ra, 32($sp)
-	lw $s7, 28($sp)
-	lw $s6, 24($sp)
-	lw $s5, 20($sp)
-	lw $s4, 16($sp)
-	lw $s3, 12($sp)
-	lw $s2, 8($sp)
-	lw $s1, 4($sp)
-	lw $s0, 0($sp)
-	addi $sp, $sp, 36
-	jr $ra											# go back to where function was called
 
 #################### DO NOT CREATE A .data SECTION ####################
 #################### DO NOT CREATE A .data SECTION ####################
