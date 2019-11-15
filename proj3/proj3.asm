@@ -1266,7 +1266,7 @@ simulate_game:
 	lw $t0, 0($sp)								# $t0 = num_pieces_to_drop from stack
 	lw $t1, 4($sp)								# $t1 = pieces_array from stack
 	# allocate room on stack for registers
-	addi $sp, $sp, -64
+	addi $sp, $sp, -36
 	sw $s0, 0($sp)
 	sw $s1, 4($sp)
 	sw $s2, 8($sp)
@@ -1275,14 +1275,7 @@ simulate_game:
 	sw $s5, 20($sp)
 	sw $s6, 24($sp)
 	sw $s7, 28($sp)
-	sw $t0, 32($sp)
-	sw $t1, 36($sp)
-	sw $t2, 40($sp)
-	sw $t3, 44($sp)
-	sw $t4, 48($sp)
-	sw $t5, 52($sp)
-	sw $t6, 56($sp)
-	sw $ra, 60($sp)
+	sw $ra, 32($sp)
 	# declare vars
 	move $s0, $a0								# $s0 = state
 	move $s1, $a1								# $s1 = filename
@@ -1298,7 +1291,7 @@ simulate_game:
 	li $t7, -1
 	beq $t7, $v0, simulate_invalid_file			# if $v0 = -1, return 0
 	beq $t7, $v1, simulate_invalid_file			# if $v1 = -1, return 0
-	# declare more vars
+	# declare more vars (free to use $s1, $s6, and $s7)
 	li $s6, 0									# $s6 = num of successfully dropped pieces
 	li $t0, 0									# $t0 = move_number
 	# calculate len(moves)
@@ -1306,7 +1299,7 @@ simulate_game:
 	jal strlen									# go to strlen
 	li $t7, 4
 	div $v0, $t7								# divide moves by 4
-	mflo $t1									# $t1 = moves_length (can reuse after this?)
+	mflo $t1									# $t1 = moves_length
 	# declare more vars
 	li $t2, 0									# $t2 = game_over FALSE												
 	li $s7, 0									# $s7 = score
@@ -1338,7 +1331,25 @@ simulate_game:
 	bne $t3, $t7, piece_not_T					# if $t3 != 'T', check if 'J'
 	move $a0, $s5								# $a0 = pieces_array
 	li $a1, 0									# $a1 = 0
+	# save $t regs on stack
+	addi $sp, $sp, -28
+	sw $t0, 0($sp)
+	sw $t1, 4($sp)
+	sw $t2, 8($sp)
+	sw $t3, 12($sp)
+	sw $t4, 16($sp)
+	sw $t5, 20($sp)
+	sw $t6, 24($sp)
 	jal simulate_get_piece						# go to simulate_get_piece
+	# get $t regs back from stack
+	lw $t6, 24($sp)
+	lw $t5, 20($sp)
+	lw $t4, 16($sp)
+	lw $t3, 12($sp)
+	lw $t2, 8($sp)
+	lw $t1, 4($sp)
+	lw $t0, 0($sp)
+	addi $sp, $sp, 28
 	j simulate_drop_cont						# go to simulate_drop_cont
 	piece_not_T:	
 	
@@ -1350,10 +1361,26 @@ simulate_game:
 	move $a1, $t5								# $a1 = col
 	move $a2, $v0								# $a2 = piece
 	move $a3, $t4								# $a3 = rotation
-	addi $sp, $sp, -4	
+	addi $sp, $sp, -32	
 	sw $s3, 0($sp)								# save rotated_piece on stack
+	# save $t regs on stack
+	sw $t0, 4($sp)
+	sw $t1, 8($sp)
+	sw $t2, 12($sp)
+	sw $t3, 16($sp)
+	sw $t4, 20($sp)
+	sw $t5, 24($sp)
+	sw $t6, 28($sp)
 	jal drop_piece								# go to drop_piece
-	addi $sp, $sp, 4
+	# get $t regs back from stack
+	lw $t6, 28($sp)
+	lw $t5, 24($sp)
+	lw $t4, 20($sp)
+	lw $t3, 16($sp)
+	lw $t2, 12($sp)
+	lw $t1, 8($sp)
+	lw $t0, 4($sp)
+	addi $sp, $sp, 32
 	li $t7, -3
 	li $t8, -2
 	li $t9, -1
@@ -1377,7 +1404,25 @@ simulate_game:
 	bltz $t5, sim_update_score					# if r < 0, go update score
 	move $a0, $s0								# $a0 = state
 	move $a1, $t5								# $a1 = row
+	# save $t regs on stack
+	addi $sp, $sp, -28
+	sw $t0, 0($sp)
+	sw $t1, 4($sp)
+	sw $t2, 8($sp)
+	sw $t3, 12($sp)
+	sw $t4, 16($sp)
+	sw $t5, 20($sp)
+	sw $t6, 24($sp)
 	jal check_row_clear							# go to check_row_clear
+	# get $t regs back from stack
+	lw $t6, 24($sp)
+	lw $t5, 20($sp)
+	lw $t4, 16($sp)
+	lw $t3, 12($sp)
+	lw $t2, 8($sp)
+	lw $t1, 4($sp)
+	lw $t0, 0($sp)
+	addi $sp, $sp, 28
 	li $t7, 1								
 	bne $t7, $v0, sim_row_clear_loop_cont		# if $v0 != 1, go check next row
 	addi $t4, $t4, 1							# else count++
@@ -1385,7 +1430,7 @@ simulate_game:
 	sim_row_clear_loop_cont:
 	addi $t5, $t5, -1							# rowcounter--	
 	j sim_row_clear_loop						# go loop again
-	# update score
+	# update score and loop again
 	sim_update_score:
 	li $t7, 1								
 	bne $t4, $t7, score_not_40					# if count != 1, keep adding score
@@ -1413,12 +1458,14 @@ simulate_game:
 	sim_end_game_loop:
 	addi $t0, $t0, 1							# move_number++
 	addi $s6, $s6, 1							# num_successful_drops++
+	addi $s2, $s2, 4							# go to next move
 	j simulate_game_loop 						# loop to start of do while loop
-	
+	# if invalid TRUE, go to next iteration
 	simulate_game_loop_cont:
 	addi $t0, $t0, 1							# move_number++
+	addi $s2, $s2, 4							# go to next move
 	j simulate_game_loop 						# loop to start of do while loop
-	
+	# end simulation function
 	simulate_invalid_file:
 	li $s6, 0
 	li $s7, 0
@@ -1426,14 +1473,7 @@ simulate_game:
 	move $v0, $s6
 	move $v1, $s7
 	# restore regs from stack
-	lw $ra, 60($sp)
-	lw $t6, 56($sp)
-	lw $t5, 52($sp)
-	lw $t4, 48($sp)
-	lw $t3, 44($sp)
-	lw $t2, 40($sp)
-	lw $t1, 36($sp)
-	lw $t0, 32($sp)
+	lw $ra, 32($sp)
 	lw $s7, 28($sp)
 	lw $s6, 24($sp)
 	lw $s5, 20($sp)
@@ -1442,7 +1482,7 @@ simulate_game:
 	lw $s2, 8($sp)
 	lw $s1, 4($sp)
 	lw $s0, 0($sp)
-	addi $sp, $sp, 64
+	addi $sp, $sp, 36
 	jr $ra										# go back to where function was called
 
 # simulate helper functions:
