@@ -125,7 +125,8 @@ load_game:
 	lw $s0, 0($sp)
 	addi $sp, $sp, 24
     jr $ra										# return to where the function was called  
-# helper functions for load_game
+
+# helper function for load_game
 read_digits:
 	# get first digit
 	li $v0, 14									# syscall for read from file
@@ -1285,8 +1286,6 @@ simulate_game:
 	move $s3, $a3								# $s3 = rotated_piece
 	move $s4, $t0								# $s4 = num_pieces_to_drop
 	move $s5, $t1								# $s5 = pieces_array
-	li $s6, 0									# $s6 = num of successfully dropped pieces
-	li $s7, 0									# $s7 = score
 	# start algorithm
 	# check that file is valid:
 	move $a0, $s0								# $a0 = state
@@ -1295,7 +1294,53 @@ simulate_game:
 	li $t3, -1
 	beq $t3, $v0, simulate_invalid_file			# if $v0 = -1, return 0
 	beq $t3, $v1, simulate_invalid_file			# if $v1 = -1, return 0
-	
+	# declare more vars:
+	li $s6, 0									# $s6 = num of successfully dropped pieces
+	li $t0, 0									# $t0 = move_number
+	li $t3, 4
+	div $s2, $t4								# divide moves by 4
+	mflo $t1									# $t1 = moves_length	
+	li $t2, 0									# $t2 = game_over FALSE												
+	li $s7, 0									# $s7 = score
+	# start loop:
+	bnez $t2, end_simulate_game					# if game_over = TRUE, end game
+	bge $s6, $s4, end_simulate_game				# if num_successful_drops => num_pieces_to_drop, end game
+	bge $t0, $t1, end_simulate_game				# if move_number => moves_length, end game
+	# extract piece, col, and rotation:
+	lbu $t3, 0($s2)								# $t3 = piece_type
+	lbu $t4, 1($s2)								# $t4 = rotation
+	lbu $t5, 2($s2)								# first digit col
+	bnez $t5, sim_two_dig_col					# if first digit != 0, it is 2 digs
+	lbu $t5, 3($s2)								# else, $t5 = one dig col
+	sim_two_dig_col:
+	lbu $t6, 3($s2)								# get next digit col
+	li $t7, 10
+	mul $t5, $t5, $t7							# $t5 = first dig * 10
+	addi $t5, $t5, $t6							# $t5 = two dig col
+	li $t6, 0									# $t6 = invalid FALSE
+	# check that type of piece it is:
+	li $t7, 'T'				
+	beq $t3, $t7, sim_piece_T					# check if piece is 'T'
+	li $t7, 'J'
+	beq $t3, $t7, sim_piece_J					# check if piece is 'J'
+	li $t7, 'Z'
+	beq $t3, $t7, sim_piece_Z					# check if piece is 'Z'
+	li $t7, 'O'
+	beq $t3, $t7, sim_piece_O					# check if piece is 'O'
+	li $t7, 'S'
+	beq $t3, $t7, sim_piece_S					# check if piece is 'S'
+	li $t7, 'L'
+	beq $t3, $t7, sim_piece_L					# check if piece is 'L'
+	li $t7, 'I'
+	beq $t3, $t7, sim_piece_I					# check if piece is 'I'
+	# retrieve piece from array:
+	sim_piece_T:
+	sim_piece_J:
+	sim_piece_Z:
+	sim_piece_O:
+	sim_piece_S:
+	sim_piece_L:
+	sim_piece_I:
 	
 	simulate_invalid_file:
 	li $s6, 0
