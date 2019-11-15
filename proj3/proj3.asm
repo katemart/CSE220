@@ -989,6 +989,8 @@ drop_piece:
 	jal count_overlaps							# go to count_overlaps
 	bltz $v0, invalid_drop_rotation				# if piece "pokes out", it is invalid to drop
 	bgtz $v0, invalid_drop						# if piece cant go into state, return -1
+	bgtz $s6, drop_piece_val_loop				# if $s6 > 0, go to drop_piece_val_loop
+	j drop_piece_val_loop_no_overlap			# if piece doesnt overlap, set piece at row#
 	# else piece fits into state so continue iterating:
 	drop_piece_val_loop:
 	addi $s7, $s7, 1							# counter++
@@ -1165,7 +1167,7 @@ drop_piece_rest_rot:
 	li $s7, -3									# row num = -3 (invalid rotation)
 	j end_drop_piece							# go to end_drop_piece
 	invalid_drop:
-	li $s7, -1									# roe num = -1 (invalid drop)
+	li $s7, -1									# row num = -1 (invalid drop)
 	end_drop_piece:	
 	move $v0, $s7								# $v0 = row num (or invalid)
 	# restore regs from stack
@@ -1316,6 +1318,7 @@ simulate_game:
 	# extract the piece, col, and rotation from string
 	lbu $t3, 0($s2)								# $t3 = piece_type
 	lbu $t4, 1($s2)								# $t4 = rotation
+	addi $t4, $t4, -48							# convert from ascii to dec
 	lbu $t5, 2($s2)								# $t5 = first col digit
 	addi $t5, $t5, -48							# convert from ascii to dec
 	bnez $t5, two_dig_col						# if first dig != 0, it is 2 digits
@@ -1333,15 +1336,11 @@ simulate_game:
 	# determine piece type
 	li $t7, 'T'	
 	bne $t3, $t7, piece_not_T					# if $t3 != 'T', check if 'J'
-	move $a0, $t3								# $a0 = pieces_array
+	move $a0, $s5								# $a0 = pieces_array
 	li $a1, 0									# $a1 = 0
 	jal simulate_get_piece						# go to simulate_get_piece
 	j simulate_drop_cont						# go to simulate_drop_cont
 	piece_not_T:	
-	
-	
-	
-	
 	
 	
 	
@@ -1371,11 +1370,54 @@ simulate_game:
 	li $t7, 1
 	beq $t6, $t7, simulate_game_loop_cont
 	# check for line clears
-	
-	
+	li $t4, 0									# count = 0
+	lbu $t5, 0($s0)								# $t5 = state.num_rows	
+	addi $t5, $t5, -1							# r = state.num_rows - 1 (row counter)			
+	sim_row_clear_loop:
+	bltz $t5, sim_update_score					# if r < 0, go update score
+	move $a0, $s0								# $a0 = state
+	move $a1, $t5								# $a1 = row
+	jal check_row_clear							# go to check_row_clear
+	li $t7, 1								
+	bne $t7, $v0, sim_row_clear_loop_cont		# if $v0 != 1, go check next row
+	addi $t4, $t4, 1							# else count++
+	j sim_row_clear_loop						# go loop again
+	sim_row_clear_loop_cont:
+	addi $t5, $t5, -1							# rowcounter--	
+	j sim_row_clear_loop						# go loop again
+	# update score
+	sim_update_score:
+	li $t7, 1								
+	bne $t4, $t7, score_not_40					# if count != 1, keep adding score
+	addi $s7, $s7, 40							# else score += 40
+	j sim_end_game_loop							# and go to end loop
+	score_not_40:
+	li $t7, 2
+	bne $t4, $t7, score_not_100					# if count != 2, keep adding score
+	addi $s7, $s7, 100							# else score += 100
+	j sim_end_game_loop							# and go to end loop
+	score_not_100:
+	li $t7, 3
+	bne $t4, $t7, score_not_300					# if count != 3, keep adding score
+	addi $s7, $s7, 100							# else score += 100
+	j sim_end_game_loop							# and go to end loop
+	score_not_300:
+	li $t7, 4
+	bne $t4, $t7, score_invalid					# if count != 4, it is invalid score
+	addi $s7, $s7, 1200							# else score += 1200
+	j sim_end_game_loop							# and go to end loop
+	score_invalid: 
+	li $s6, -69
+	li $s7, -69
+	j end_simulate_game
+	sim_end_game_loop:
+	addi $t0, $t0, 1							# move_number++
+	addi $s6, $s6, 1							# num_successful_drops++
+	j simulate_game_loop 						# loop to start of do while loop
 	
 	simulate_game_loop_cont:
-	addi $t0, $t0, 1							# move_number += 1
+	addi $t0, $t0, 1							# move_number++
+	j simulate_game_loop 						# loop to start of do while loop
 	
 	simulate_invalid_file:
 	li $s6, 0
@@ -1405,31 +1447,54 @@ simulate_game:
 
 # simulate helper functions:
 strlen:
-	li $t0, 0									# length = 0
+	# allocate room on stack for registers
+	addi $sp, $sp, -8
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	# declare var
+	li $s0, 0									# length = 0							
 	strlen_loop:
-	lbu $t1, 0($a0)								# $t1 = str[i]
-	beqz $t1, end_strlen						# if str[i] = 0, go to end_strlen
-	addi $t0, $t0, 1							# else length++
+	lbu $s1, 0($a0)								# $s1 = str[i]
+	beqz $s1, end_strlen						# if str[i] = 0, go to end_strlen
+	addi $s0, $s0, 1							# else length++
 	addi $a0, $a0, 1							# and go to next char
 	j strlen_loop								# and loop again
 	end_strlen:
-	move $v0, $t0								# $v0 = $t0
+	move $v0, $s0								# $v0 = $s0
+	# restore regs from stack
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 8
     jr $ra										# return to where func was called
 	
 simulate_get_piece:
-	move $t0, $a0								# $t0 = pieces_array
-	move $t1, $a1								# $t1 = num passed
+	# allocate room on stack for registers
+	addi $sp, $sp, -20
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	sw $s2, 8($sp)
+	sw $s3, 12($sp)
+	sw $ra, 16($sp)
+	move $v0, $a0								# $v0 = pieces_array
+	move $s0, $a1								# $s0 = num passed
 	sim_get_piece_loop:
-	blez $t1, end_sim_get_piece_loop
-	lbu $t2, 0($t0)
-	lbu $t3, 1($t0)
-	mul $t4, $t2, $t3							# $t4 = row * col
-	addi $t4, $t4, 2							# $t4 = $t4 + 2
-	add $t0, $t0, $t4							# $t0 = baseaddr + $t4
-	addi $t1, $t1, -1
+	blez $s0, end_sim_get_piece_loop
+	lbu $s1, 0($v0)
+	lbu $s2, 1($v0)
+	mul $s3, $s1, $s2							# $s3 = row * col
+	addi $s3, $s3, 2							# $s3 = $s3 + 2
+	add $v0, $v0, $s3							# $v0 = baseaddr + $s3
+	addi $s0, $s0, -1
 	j sim_get_piece_loop
 	end_sim_get_piece_loop:
-	move $v0, $t0
+	# restore regs from stack
+	lw $ra, 16($sp)
+	lw $s3, 12($sp)
+	lw $s2, 8($sp)
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 20
+	jr $ra										# return to where func was called
 	
 
 #################### DO NOT CREATE A .data SECTION ####################
