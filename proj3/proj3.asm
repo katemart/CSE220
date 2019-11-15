@@ -606,7 +606,6 @@ rotate_thrice:
 	addi $sp, $sp, 28
     jr $ra										# go back to where function was called
 
-###################################### FIX HELPER FUNCS ######################################
 # rotate helper functions
 rotate_init_original:
 	# allocate memory on stack for 4 regs
@@ -725,7 +724,6 @@ check_rotated_piece:
 	lw $s0, 0($sp)
 	addi $sp, $sp, 16	
 	jr $ra										# go back to where function was called	
-##################################################################################################################
 
 # PART VI
 count_overlaps:
@@ -1297,50 +1295,25 @@ simulate_game:
 	# declare more vars:
 	li $s6, 0									# $s6 = num of successfully dropped pieces
 	li $t0, 0									# $t0 = move_number
+	# calculate moves length
+	move $a0, $s2								# $a0 = moves
+	jal strlen
 	li $t3, 4
-	div $s2, $t4								# divide moves by 4
-	mflo $t1									# $t1 = moves_length	
+	div $v0, $t3								# divide moves by 4
+	mflo $t1									# $t1 = moves_length (can reuse after this?)
 	li $t2, 0									# $t2 = game_over FALSE												
 	li $s7, 0									# $s7 = score
 	# start loop:
 	bnez $t2, end_simulate_game					# if game_over = TRUE, end game
 	bge $s6, $s4, end_simulate_game				# if num_successful_drops => num_pieces_to_drop, end game
 	bge $t0, $t1, end_simulate_game				# if move_number => moves_length, end game
-	# extract piece, col, and rotation:
-	lbu $t3, 0($s2)								# $t3 = piece_type
-	lbu $t4, 1($s2)								# $t4 = rotation
-	lbu $t5, 2($s2)								# first digit col
-	bnez $t5, sim_two_dig_col					# if first digit != 0, it is 2 digs
-	lbu $t5, 3($s2)								# else, $t5 = one dig col
-	sim_two_dig_col:
-	lbu $t6, 3($s2)								# get next digit col
-	li $t7, 10
-	mul $t5, $t5, $t7							# $t5 = first dig * 10
-	addi $t5, $t5, $t6							# $t5 = two dig col
-	li $t6, 0									# $t6 = invalid FALSE
-	# check that type of piece it is:
-	li $t7, 'T'				
-	beq $t3, $t7, sim_piece_T					# check if piece is 'T'
-	li $t7, 'J'
-	beq $t3, $t7, sim_piece_J					# check if piece is 'J'
-	li $t7, 'Z'
-	beq $t3, $t7, sim_piece_Z					# check if piece is 'Z'
-	li $t7, 'O'
-	beq $t3, $t7, sim_piece_O					# check if piece is 'O'
-	li $t7, 'S'
-	beq $t3, $t7, sim_piece_S					# check if piece is 'S'
-	li $t7, 'L'
-	beq $t3, $t7, sim_piece_L					# check if piece is 'L'
-	li $t7, 'I'
-	beq $t3, $t7, sim_piece_I					# check if piece is 'I'
-	# retrieve piece from array:
-	sim_piece_T:
-	sim_piece_J:
-	sim_piece_Z:
-	sim_piece_O:
-	sim_piece_S:
-	sim_piece_L:
-	sim_piece_I:
+	move $a0, $s0								# $a0 = state
+	move $a1, $s2								# $a1 = moves
+	move $a2, $s3								# $a2 = rotated_piece
+	jal simulate_drop_piece						# go to simulate_drop_piece	
+	
+	
+	
 	
 	simulate_invalid_file:
 	li $s6, 0
@@ -1362,7 +1335,84 @@ simulate_game:
 	lw $s1, 4($sp)
 	lw $s0, 0($sp)
 	addi $sp, $sp, 48
-	jr $ra
+	jr $ra										# go back to where function was called
+
+# simulate helper functions:
+strlen:
+	# allocate room on stack for registers
+	addi $sp, $sp, -8
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	# declare var
+	li $s0, 0							# length = 0							
+	strlen_loop:
+	lbu $s1, 0($a0)						# $s1 = str[i]
+	beqz $s1, end_strlen				# if str[i] = 0, go to end_strlen
+	addi $s0, $s0, 1					# else length++
+	addi $a0, $a0, 1					# and go to next char
+	j strlen_loop						# and loop again
+	end_strlen:
+	move $v0, $s0						# $v0 = $s0
+	# restore regs from stack
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 8
+    jr $ra								# return to where func was called
+
+simulate_drop_piece:
+	# allocate room on stack for registers
+	addi $sp, $sp, -36
+	sw $s0, 0($sp)
+	sw $s1, 4($sp)
+	sw $s2, 8($sp)
+	sw $s3, 12($sp)
+	sw $s4, 16($sp)
+	sw $s5, 20($sp)
+	sw $s6, 24($sp)
+	sw $s7, 28($sp)
+	sw $ra, 32($sp)
+	# declare vars
+	move $s0, $a0								# $s0 = state
+	move $s1, $a1								# $s1 = moves
+	move $s2, $a2								# #s2 = rotated_piece
+	# extract piece, col, and rotation:
+	lbu $s3, 0($s1)								# $s3 = piece_type
+	lbu $s4, 1($s1)								# $s4 = rotation
+	lbu $s5, 2($s1)								# $s5 = first col digit
+	addi $s5, $s5, -48							# to convert from ascii to dec
+	bnez $s5, two_dig_col						# if first dig != 0, it is 2 digits
+	lbu $s5, 3($s1)								# else, $s5 = one digit col
+	addi $s5, $s5, -48							# to convert from ascii to dec
+	j sim_end_extraction
+	two_dig_col:
+	lbu $t0, 3($s1)								# $t0 = col second digit
+	addi $t0, $t0, -48							# to convert from ascii to dec
+	li $t1, 10									
+	mul $s5, $s5, $t1							# $s5 = first digit * 10
+	add $s5, $s5, $t0							# $s5 = two digit col
+	sim_end_extraction:
+	li $s6, 0									# $s6 = invalid FALSE
+	# determine piece type:
+	sim_drop_piece:
+	li $t0, 'T'
+	bne $t0, $s3, piece_not_T					# if $s3 != 'T', check next
+	
+	piece_not_T:
+	
+	
+	
+	# restore regs from stack
+	lw $ra, 32($sp)
+	lw $s7, 28($sp)
+	lw $s6, 24($sp)
+	lw $s5, 20($sp)
+	lw $s4, 16($sp)
+	lw $s3, 12($sp)
+	lw $s2, 8($sp)
+	lw $s1, 4($sp)
+	lw $s0, 0($sp)
+	addi $sp, $sp, 36
+	jr $ra											# go back to where function was called
 
 #################### DO NOT CREATE A .data SECTION ####################
 #################### DO NOT CREATE A .data SECTION ####################
