@@ -59,12 +59,12 @@ load_game:
 	# if file exists, read and save num_rows into state
 	addi $sp, $sp, -1							# buffer space
 	jal read_digits								# get the num_rows
-	bltz $v0, load_file_error
+	bltz $v0, load_file_error					# if $v0 < 0, error
 	move $s3, $v0								# $s3 = num_rows
 	sb $s3, 0($s0)								# save num_rows into state
 	# read and save num_cols into state
 	jal read_digits								# get the num_cols
-	bltz $v0, load_file_error
+	bltz $v0, load_file_error					# if $v0 < 0, error
 	move $s4, $v0								# $s4 = num_cols
 	sb $s4, 1($s0)								# save num_cols into state
 	# read and save rest of chars into state
@@ -81,10 +81,10 @@ load_game:
 	move $a1, $sp								# $a1 = buffer (which is $sp)
 	li $a2, 1									# $a2 = read one char at a time
 	syscall
-	beqz $v0, end_of_file
-	bltz $v0, load_file_error
-	lbu $t6, 0($sp)
-	beqz $t6, end_of_file
+	beqz $v0, end_of_file						# if $v0 = 0, end of file  
+	bltz $v0, load_file_error					# if $v0 < 0, error
+	lbu $t6, 0($sp)								# $t6 = char
+	beqz $t6, end_of_file						# $ if $t6 = 0, end of file
 	beq $t0, $t6, read_chars_loop				# if $t4 = \n, read next
 	beq $t1, $t6, char_is_O						# if $t4 = O, char is valid
 	bne $t2, $t6, char_is_invalid				# if $t4 != '.' it is an invalid char
@@ -103,11 +103,11 @@ load_game:
 	addi $s0, $s0, 1							# go to next char of struct
 	addi $t5, $t5, -1							# decrement $t5
 	bgtz $t5, read_chars_loop					# if $t5 > 0, loop again
-	j end_of_file
+	j end_of_file								# go to end_of_file
 	load_file_error:
 	li $v0, -1									# $v0 = -1 to indicate error
 	li $v1, -1									# $v1 = -1 to indicate error
-	j end_load_game
+	j end_load_game								# go to end_load_game
 	end_of_file:
 	addi $sp, $sp, 1							# restore buffer space
 	# close file 
@@ -153,24 +153,23 @@ read_digits:
 	li $v0, 14									# syscall for read from file
 	move $a0, $s2								# $a0 = file descriptor
 	move $a1, $sp								# $a1 = buffer (which is $sp)
-	li $a2, 1	
+	li $a2, 1									# $a2 = read one char at a time
 	syscall
 	# combine two digits into one
 	li $t2, 10
 	mul $t3, $t0, $t2							# $t3 = first digit * 10
 	add $t3, $t1, $t3							# $t3 = (first dig * 10) + second digit
-	move $v0, $t3								# $t3 = final digit (first + second together)
-	j end_read_num
+	move $v0, $t3								# $v0 = final digit (first + second together)
+	j end_read_num								# go to end_read_num
 	no_second_digit:
-	move $v0, $t0								# $t3 = final digit (only first)
-	j end_read_num
+	move $v0, $t0								# $v0 = final digit (only first)
+	j end_read_num								# go to end_read_num
 	num_reading_error:
 	li $v0, -1									# $v0 = -1 to indicate something went wrong
 	end_read_num:
 	jr $ra										# return to where the function was called
 
-# FORMULA FOR PARTS III AND IV:
-# ((row * col_num) + col) * element_size which is 1 so, (($a1 * $t1) + $a2) * 1
+# FORMULA FOR PARTS III AND IV: ((row * col_num) + col) * element_size which is 1 so, (($a1 * $t1) + $a2) * 1
 
 # PART III
 get_slot:
@@ -233,8 +232,8 @@ rotate:
 	bltz $s1, invalid_rotation					# check if rotation is valid
 	# check if piece given is O
 	li $t0, 2
-	lbu $s3, 0($s0)								# $t1 = num_rows of piece
-	lbu $s4, 1($s0)								# $t2 = num_cols of piece
+	lbu $s3, 0($s0)								# $s3 = num_rows of piece
+	lbu $s4, 1($s0)								# $s4 = num_cols of piece
 	bne $t0, $s3, cont_rotate					# if num_rows != 2, check rest of pieces
 	bne $t0, $s4, cont_rotate					# if num_cols != 2, check rest of pieces
 	move $a0, $s2								# $a0 = rotated_piece
@@ -404,7 +403,7 @@ rotate_once:
 	li $a1, 0									# $a1 = 0
 	move $a2, $s4								# $a2 = $s4
 	move $a3, $v0								# $a3 = char from get_slot
-	jal set_slot
+	jal set_slot								# go to set_slot
 	move $a0, $s0								# $a0 = (original) piece
 	move $a1, $s3								# $a1 = $s3
 	li $a2, 1									# $a2 = 1
@@ -798,7 +797,7 @@ count_overlaps_I:
 	li $t0, 2	
 	beq $t0, $v0, count_overlaps_rest			# if $v0 = 2, it is not I so check rest
 	li $t0, 1
-	beq $t0, $v0, count_overlaps_I_rot			# if $t1 = 1, it is a rotated I
+	beq $t0, $v0, count_overlaps_I_rot			# if $v0 = 1, it is a rotated I
 	# check that non-rotated I fits
 	addi $t0, $s2, 3							# $t0 = col + 3
 	lbu $s4, 1($s0)								# $s4 = num_cols of state
@@ -1023,7 +1022,7 @@ drop_piece_O:
 	move $a1, $s7								# $a1 = row val 
 	move $a2, $s1								# $a2 = col val
 	move $a3, $v0								# $a3 = char from get_slot
-	jal set_slot								# go to get_slot
+	jal set_slot								# go to set_slot
 	move $a0, $s4								# $a0 = rotated_piece
 	li $a1, 1									# $a1 = 1
 	move $a2, $s5								# $a2 = $s5
@@ -1032,7 +1031,7 @@ drop_piece_O:
 	move $a1, $t8								# $a1 = row + 1
 	move $a2, $s1								# $a2 = col val
 	move $a3, $v0								# $a3 = char from get_slot
-	jal set_slot								# go to get_slot
+	jal set_slot								# go to set_slot
 	addi $s1, $s1, 1							# increment col index (for set_slot)
 	addi $s5, $s5, 1							# increment col index (for get_slot)
 	ble $s5, $s6, drop_piece_O_loop				# if col index <= 1, loop again
@@ -1056,7 +1055,7 @@ drop_piece_I:
 	move $a1, $s7								# $a1 = row val
 	move $a2, $s1								# $a2 = col val
 	move $a3, $v0								# $a3 = char from get_slot
-	jal set_slot								# go to get_slot
+	jal set_slot								# go to set_slot
 	addi $s1, $s1, 1							# increment col index (for set_slot)
 	addi $s5, $s5, 1							# increment col index (for get_slot)
 	addi $s6, $s6, -1							# counter--
@@ -1262,7 +1261,7 @@ check_row_clear:
 simulate_game:
 	lw $t0, 0($sp)								# $t0 = num_pieces_to_drop from stack
 	lw $t1, 4($sp)								# $t1 = pieces_array from stack
-	# allocate room on stack for registers
+	# allocate room on stack for 9 registers
 	addi $sp, $sp, -36
 	sw $s0, 0($sp)
 	sw $s1, 4($sp)
@@ -1304,7 +1303,7 @@ simulate_game:
 	end_moveslen:
 	move $s2, $t7								# restore moves (original) value
 	li $t2, 0									# $t2 = game_over FALSE								
-# start loop
+	# start loop
 	simulate_game_loop:
 	bnez $t2, end_simulate_game					# if game_over = TRUE, end game
 	bge $s6, $s4, end_simulate_game				# if num_successful_drops => num_pieces_to_drop, end game
@@ -1318,7 +1317,7 @@ simulate_game:
 	bnez $t5, two_dig_col						# if first dig != 0, it is 2 digits
 	lbu $t5, 3($s2)								# else $t5 = one digit col
 	addi $t5, $t5, -48							# convert from ascii to dec
-	j sim_end_extraction
+	j sim_end_extraction						# go to sim_end_extraction
 	two_dig_col:
 	lbu $t7, 3($s2)								# col second digit
 	addi $t7, $t7, -48							# convert from ascii to dec
