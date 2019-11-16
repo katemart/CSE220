@@ -14,7 +14,7 @@ state:
 .byte 6
 .byte 10
 .asciiz "....................OOO.......OOOO.....OOOOOO....OOOOOOO..OO"  # not null-terminated during grading!
-row: .word 3 # this is test case #3 in the PDF
+row: .word -3 # this is test case #3 in the PDF
 col: .word 2
 piece:
 .byte 2
@@ -94,7 +94,27 @@ syscall
 li $v0, 11
 li $a0, '\n'
 syscall
-################################## END ##################################
+
+###################################### PRINT 2D ######################################
+la $t0, state
+lbu $t1, 0($t0)
+lbu $t2, 1($t0)
+addi $t0, $t0, 2
+outerloop:
+move $t3, $t2
+innerloop:
+li $v0, 11
+lbu $a0, 0($t0)
+syscall
+addi $t3, $t3, -1
+addi $t0, $t0, 1
+bgtz $t3, innerloop
+li $v0, 11
+li $a0, '\n'
+syscall
+addi $t1, $t1, -1
+bgtz $t1, outerloop
+#######################################################################################
 
 li $v0, 10
 syscall

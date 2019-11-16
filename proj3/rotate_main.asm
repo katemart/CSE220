@@ -8,8 +8,8 @@
 piece:
 .byte 3
 .byte 2
-.asciiz "O.OO.O"  # not null-terminated during grading!
-rotation: .word 4
+.asciiz ".O.OOO"  # not null-terminated during grading!
+rotation: .word -5
 rotated_piece: .asciiz "GB8uJnHG"   # not null-terminated during grading!
 
 .text

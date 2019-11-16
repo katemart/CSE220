@@ -1,27 +1,27 @@
 .data
-state:
-.byte 8
-.byte 10
-.asciiz "...........O.........O.........O......O.OO.....OOOOOOO...OOOOOOOO.OOOOOOOOO.OOOO" # not null-terminated during grading!
-col: .word 4
-piece:
-.byte 2
-.byte 3
-.asciiz "OOO.O." # not null-terminated during testing!
-rotation: .word 3
-rotated_piece: .asciiz "????????" # not null-terminated during testing!
-
 #state:
-#.byte 6
+#.byte 8
 #.byte 10
-#.asciiz "....................OOO.......OOOO.....OOOOOO....OOOOOOO..OO"  # not null-terminated during grading!
-#col: .word 7
+#.asciiz "...........O.........O.........O......O.OO.....OOOOOOO...OOOOOOOO.OOOOOOOOO.OOOO" # not null-terminated during grading!
+#col: .word 8
 #piece:
 #.byte 2
 #.byte 3
-#.asciiz "OOO.O." # not null-terminated during testing!
-#rotation: .word 3
+#.asciiz "OO..OO" # not null-terminated during testing!
+#rotation: .word 2
 #rotated_piece: .asciiz "????????" # not null-terminated during testing!
+
+state:
+.byte 8
+.byte 10
+.asciiz "...........O.........O.........O......O.OO.....OOOOOOO...OOOOOOOO.OOOOOOOOO.OOOO"  # not null-terminated during grading!
+col: .word 8
+piece:
+.byte 2
+.byte 3
+.ascii "OO..OO" # not null-terminated during testing!
+rotation: .word 2
+rotated_piece: .asciiz "????????" # not null-terminated during testing!
 
 .text
 main:

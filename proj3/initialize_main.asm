@@ -1,8 +1,8 @@
 .data
-struct: .space 50  # not null-terminated during grading!
-num_rows: .word 8
-num_cols: .word 6
-character: .byte 'x'
+struct: .space 6  # not null-terminated during grading!
+num_rows: .word 2
+num_cols: .word 3
+character: .byte 'P'
 
 .text
 main:

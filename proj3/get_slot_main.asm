@@ -8,10 +8,10 @@
 
 struct:
 .byte 2
-.byte 3
+.byte 2
 .ascii "OOOO.."  # not null-terminated during grading!
-row: .word 1
-col: .word 1
+row: .word 0
+col: .word 2
 
 .text
 main:

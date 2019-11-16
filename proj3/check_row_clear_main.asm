@@ -1,9 +1,15 @@
 .data
+#state:
+#.byte 8
+#.byte 6
+#.asciiz "...O.....OO..OOOO..OOOO.OOOOOOOOOOOOOOOOOOOOOOOO" # not null-terminated during grading!
+#row: .word 5
+
 state:
 .byte 8
 .byte 6
-.asciiz "...O.....OO..OOOO..OOOO.OOOOOOOOOOOOOOOOOOOOOOOO" # not null-terminated during grading!
-row: .word 5
+.asciiz "...O.....OO..OOOO..OOOO.OOOOOOOOOOOOOOOOOOOOOOOO"  # not null-terminated during grading!
+row: .word 19
 
 .text
 main:

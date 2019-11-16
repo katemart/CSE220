@@ -1,15 +1,25 @@
 # This is example 4 from the PDF. You will need to adjust the size of the memory buffer
 # to store the game state struct.
 .data
+#state:
+#.byte 99
+#.byte 77
+#.asciiz "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP" # not null-terminated during grading!
+#filename: .asciiz "game2.txt"
+#moves: .asciiz "I005Z005S001I104O605O000I009O202I107"
+#rotated_piece: .asciiz "????????" # not null-terminated during testing!
+#num_pieces_to_drop: .word 9
+
 state:
 .byte 99
 .byte 77
-.asciiz "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP" # not null-terminated during grading!
-filename: .asciiz "game2.txt"
-moves: .asciiz "I005Z005S001I104O605O000I009O202I107"
+.asciiz "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu" # not null-terminated during grading!
+filename: .asciiz "game5.txt"
+moves: .asciiz "O500I212S916L508L310J607L609Z503S309Z719L418O619O806J511L506I610O101O520Z514S512"
 rotated_piece: .asciiz "????????" # not null-terminated during testing!
-num_pieces_to_drop: .word 9
-pieces_array:
+num_pieces_to_drop: .word 20
+
+pieces_arr:
 # T piece
 .byte 2
 .byte 3
@@ -49,7 +59,7 @@ la $a3, rotated_piece
 addi $sp, $sp, -8
 lw $t0, num_pieces_to_drop
 sw $t0, 0($sp)
-la $t0, pieces_array
+la $t0, pieces_arr
 sw $t0, 4($sp)
 li $t0, 28132 # trashing $t0
 jal simulate_game
@@ -93,6 +103,14 @@ syscall
 # replace this syscall 4 with some of your own code that prints the game field in 2D
 move $a0, $t0
 addi $a0, $a0, 2
+li $v0, 4
+syscall
+
+li $v0, 11
+li $a0, '\n'
+syscall
+
+la $a0, filename
 li $v0, 4
 syscall
 

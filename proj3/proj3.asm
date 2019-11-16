@@ -1230,7 +1230,7 @@ check_row_clear:
 	addi $s3, $s3, -1							# decrement counter
 	bgtz $s3, row_cleared_loop_inner			# if $s3 > 0, loop again
 	addi $s1, $s1, -1
-	bgtz $s1, row_cleared_loop_outer
+	bgtz $s1, row_cleared_loop_outer			# if $s1 > 0, loop again
 	# set top row to dots
 	li $t7, 0									# $t7 = col val (for set_slot)
 	lbu $t8, 1($s0)								# $t8 = state.num_cols
@@ -1401,7 +1401,7 @@ simulate_game:
 	# check if invalid is true
 	simulate_check_invalid:
 	li $t7, 1
-	beq $t6, $t7, simulate_game_loop_cont
+	beq $t6, $t7, simulate_game_loop_cont		# if invalid TRUE, go to simulate_game_loop_cont
 	# check for line clears
 	li $t4, 0									# count = 0
 	lbu $t5, 0($s0)								# $t5 = state.num_rows	
@@ -1468,11 +1468,11 @@ simulate_game:
 	j simulate_game_loop 						# loop to start of do while loop
 	# end simulation function
 	simulate_invalid_file:
-	li $s6, 0
-	li $s7, 0
+	li $s6, 0									# num_successful_drops = 0
+	li $s7, 0									# score = 0
 	end_simulate_game:
-	move $v0, $s6
-	move $v1, $s7
+	move $v0, $s6								# $v0 = num_successful_drops
+	move $v1, $s7								# $v1 = score
 	# restore regs from stack
 	lw $ra, 32($sp)
 	lw $s7, 28($sp)
