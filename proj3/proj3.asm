@@ -1449,7 +1449,7 @@ simulate_game:
 	score_not_100:
 	li $t7, 3
 	bne $t4, $t7, score_not_300					# if count != 3, keep adding score
-	addi $s7, $s7, 100							# else score += 100
+	addi $s7, $s7, 300							# else score += 100
 	j sim_end_game_loop							# and go to end loop
 	score_not_300:
 	li $t7, 4
