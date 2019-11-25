@@ -35,10 +35,38 @@ li $t0, 1											# $t0 = 1
 sll $t0, $t0, 16									# $t0 = 2^16
 addi $t0, $t0, -1									# $t0 = 2^16 - 1
 and $v0, $v0, $t0									# $v0 = $v0 and (2^16 - 1)
-jr $ra
+jr $ra												# return to where func was called
 
 compare_to:
-jr $ra
+# need to retrieve msg_id, frag_offset, src_addr to compare
+# compare msg_id from 1st and 2nd packets:
+lhu $t1, 2($a0)										# $t1 = 3rd and 4th bytes from 1st packet
+andi $t1, $t1, 0xFF									# $t1 = p1.msg_id
+lhu $t2, 2($a1)										# $t2 = 3rd and 4th bytes from 2nd packet
+andi $t2, $t2, 0xFF									# $t2 = p2.msg_id
+blt $t1, $t2, compare_less							# if p1.msg_id < p2.msg_id return -1
+bgt $t1, $t2, compare_greater						# if p1.msg_id > p2.msg_id return 1
+# compare frag_offset from 1st and 2nd packets:
+lhu $t1, 4($a0)										# $t1 = 5th and 6th bytes from 1st packet
+andi $t1, $t1, 0xFFF								# $t1 = p1.fragment_offset
+lhu $t2, 4($a1)										# $t2 = 5th and 6th bytes from 2nd packet
+andi $t2, $t2, 0xFFF								# $t2 = p2.fragment_offset
+blt $t1, $t2, compare_less							# if p1.frag_off < p2.frag_off return -1
+bgt $t1, $t2, compare_greater						# if p1.frag_off > p2.frag_off return 1
+# compare src_addr from 1st and 2nd packets:
+lbu $t1, 9($a0)										# $t1 = p1.src_addr
+lbu $t2, 9($a1)										# $t2 = p2.src_addr
+blt $t1, $t2, compare_less							# if p1.src_addr < p2.src_addr return -1
+bgt $t1, $t2, compare_greater						# if p1.src_addr > p2.src_addr return 1
+li $v0, 0											# else return 0
+j end_compare_to									# go to end func
+compare_less:
+li $v0, -1											# $v0 = -1
+j end_compare_to									# go to end func
+compare_greater:
+li $v0, 1											# $v0 = 1
+end_compare_to:
+jr $ra												# return to where func was called
 
 packetize:
 jr $ra
