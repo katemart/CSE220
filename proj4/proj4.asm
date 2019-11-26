@@ -8,6 +8,7 @@
 #################### DO NOT CREATE A .data SECTION ####################
 
 .text
+# PART I
 compute_checksum:
 lw $t0, 0($a0)										# $t0 = first 4 bytes from packet
 andi $v0, $t0, 0xFFFF								# $v0 = total_length (first 2 bytes)
@@ -37,6 +38,8 @@ addi $t0, $t0, -1									# $t0 = 2^16 - 1
 and $v0, $v0, $t0									# $v0 = $v0 and (2^16 - 1)
 jr $ra												# return to where func was called
 
+
+# PART II
 compare_to:
 # need to retrieve msg_id, frag_offset, src_addr to compare
 # compare msg_id from 1st and 2nd packets:
@@ -68,8 +71,41 @@ li $v0, 1											# $v0 = 1
 end_compare_to:
 jr $ra												# return to where func was called
 
+
+# PART III
 packetize:
-jr $ra
+# retrieve args from stack
+lw $t0, 0($sp)  # msg_id
+lw $t1, 4($sp)  # priority
+lw $t2, 8($sp)  # protocol
+lw $t3, 12($sp) # src_addr
+lw $t4, 16($sp) # dest_addr
+# allocate room on stack for registers
+addi $sp, $sp, -36
+sw $s0, 0($sp)
+sw $s1, 4($sp)
+sw $s2, 8($sp)
+sw $s3, 12($sp)
+sw $s4, 16($sp)
+sw $s5, 20($sp)
+sw $s6, 24($sp)
+sw $s7, 28($sp)
+sw $ra, 32($sp)
+# declare vars
+
+
+
+# restore regs from stack
+lw $ra, 32($sp)
+lw $s7, 28($sp)
+lw $s6, 24($sp)
+lw $s5, 20($sp)
+lw $s4, 16($sp)
+lw $s3, 12($sp)
+lw $s2, 8($sp)
+lw $s1, 4($sp)
+lw $s0, 0($sp)
+jr $ra												# return to where func was called
 
 clear_queue:
 jr $ra
