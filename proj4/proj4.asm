@@ -111,16 +111,15 @@ add $s0, $s0, $t2									# pointer = packets[] + total_len
 move $t9, $s0										# $t9 = packets (copy)
 packetize_loop_start:
 lbu $t1, 0($s1)										# $t1 = first char from msg
-beqz $t1, packetize_cont_null						# if $t1 = null-term, it is last packet
-bge $t0, $s2, packetize_cont						# if counter => payload_size, cont packetizing										
 sb $t1, 12($s0)										# save $t1 into packets[12]
+beqz $t1, packetize_cont_null						# if $t1 = null-term, it is last packet
+bge $t0, $s2, packetize_cont						# if counter => payload_size, cont packetizing
 addi $t0, $t0, 1									# counter++
 addi $s0, $s0, 1									# packets[i]++
 addi $s1, $s1, 1									# msg[i]++
 j packetize_loop_start								# loop again
 packetize_cont_null:
 li $t4, 0											# flags = 0
-sb $0, ($s0)										# save null-term into packets[]
 addi $t0, $t0, 1									# counter++
 packetize_cont:
 move $s0, $t9										# $s0 = packets (starting addr)
