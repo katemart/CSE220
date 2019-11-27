@@ -3,7 +3,7 @@
 packets: .space 141  # adjust as needed to store all bytes of the packets
 msg: .asciiz "Grace Murray Hopper was one of the first computer programmers to work on the Harvard Mark I."
 .align 2
-payload_size: .word 12
+payload_size: .word 24
 ############# NOTE: ONLY WORKS WHEN payload_size IS MULTIPLE OF 4!!!!!!! #############
 version: .word 5
 msg_id: .word 154
@@ -226,13 +226,15 @@ move $t7, $t0									# $t7 = packets (copy)
 addi $t9, $t8, -12								# $t8 = total_len - header = counter
 payload_loop:
 lbu $t1, 12($t0)								# $t1 = first char of payload
+beqz $t1, print_packets_cont
 move $a0, $t1
 li $v0, 11
 syscall
 addi $t0, $t0, 1								# go to next char of payload
 addi $t9, $t9, -1								# counter--
 bgtz $t9, payload_loop							# if counter > 0, loop again
-# loop again
+# loop again:
+print_packets_cont:
 li $a0, '\n'
 li $v0, 11
 syscall
