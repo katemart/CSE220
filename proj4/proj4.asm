@@ -75,11 +75,11 @@ jr $ra												# return to where func was called
 # PART III
 packetize:
 # retrieve args from stack
-lw $t0, 0($sp)  # msg_id
-lw $t1, 4($sp)  # priority
-lw $t2, 8($sp)  # protocol
-lw $t3, 12($sp) # src_addr
-lw $t4, 16($sp) # dest_addr
+lw $t4, 0($sp)  # msg_id
+lw $t5, 4($sp)  # priority
+lw $t6, 8($sp)  # protocol
+lw $t7, 12($sp) # src_addr
+lw $t8, 16($sp) # dest_addr
 # allocate room on stack for registers
 addi $sp, $sp, -36
 sw $s0, 0($sp)
@@ -90,10 +90,45 @@ sw $s4, 16($sp)
 sw $s5, 20($sp)
 sw $s6, 24($sp)
 sw $s7, 28($sp)
-sw $ra, 32($sp)
+sw $ra, 32($sp)										
 # declare vars
+move $s0, $a0										# $s0 = packets
+move $s1, $a1										# $s1 = msg
+move $s2, $a2										# $s2 = payload_size
+move $s3, $a3										# $s3 = version
+move $s4, $t4										# $s4 = msg_id
+move $s5, $t5										# $s5 = priority
+move $s6, $t6										# $s6 = protocol
+move $s7, $t7										# $s7 = src_addr
+# must save $t8 each time before jumping -- DO NOT OVERWRITE!! --
+li $t2, 0											# total_len = 0
+li $t3, 0											# frag_offset = 0
+li $t4, 0											# flags = 0
+packetize_loop:
+li $t0, 0											# counter
+add $s0, $s0, $t2									# pointer = packets[] + total_len
+move $t9, $s0										# $t9 = packets (copy)
+packetize_loop_start:
+lbu $t1, 0($s1)										# $t1 = first char from msg
+beqz $t1, packetize_cont_null						# if $t1 = null-term, it is last packet
+bge $t0, $s2, packetize_cont						# if counter => payload_size, cont packetizing										
+sb $t1, 12($s0)										# save $t1 into packets[12]
+addi $t0, $t0, 1									# counter++
+addi $s0, $s0, 1									# packets[i]++
+addi $s1, $s1, 1									# msg[i]++
+j packetize_loop_start								# loop again
+packetize_cont_null:
+li $t4, 1											# flags = 1
+packetize_cont:
+move $s0, $t9										# $s0 = packets (starting addr)
+addi $t2, $t0, 12									# total_len = payload + header (which is always 12)
+sll $t5, $s3, 28									# $t5 = version shifted 28 to the left
+sll $t6, $s4, 16									# $t6 = msg_id shifted 15 to the left
+or $t5, $t5, $t6									# $t5 = version OR msg_id
+or $t5, $t5, $t2									# $t5 = $t5 OR total_len
+sw $t5, ($s0)										# save $t5 to packets[]
 
-
+# WHEN CALC CHECKSUM NEED TO PRESERVE TOTAL LEN AND $t9!!
 
 # restore regs from stack
 lw $ra, 32($sp)
