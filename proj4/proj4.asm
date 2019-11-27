@@ -103,9 +103,10 @@ move $s7, $t7										# $s7 = src_addr
 # must save $t8 each time before jumping -- DO NOT OVERWRITE!! --
 li $t2, 0											# total_len = 0
 li $t3, 0											# frag_offset = 0
-li $t4, 0											# flags = 0
+li $t7, 0											# num_of_packets ($v0) = 0
 packetize_loop:
 li $t0, 0											# counter
+li $t4, 1											# flags = 1
 add $s0, $s0, $t2									# pointer = packets[] + total_len
 move $t9, $s0										# $t9 = packets (copy)
 packetize_loop_start:
@@ -118,7 +119,9 @@ addi $s0, $s0, 1									# packets[i]++
 addi $s1, $s1, 1									# msg[i]++
 j packetize_loop_start								# loop again
 packetize_cont_null:
-li $t4, 1											# flags = 1
+li $t4, 0											# flags = 0
+sb $0, ($s0)										# save null-term into packets[]
+addi $t0, $t0, 1									# counter++
 packetize_cont:
 move $s0, $t9										# $s0 = packets (starting addr)
 addi $t2, $t0, 12									# total_len = payload + header (which is always 12)
@@ -126,10 +129,44 @@ sll $t5, $s3, 28									# $t5 = version shifted 28 to the left
 sll $t6, $s4, 16									# $t6 = msg_id shifted 15 to the left
 or $t5, $t5, $t6									# $t5 = version OR msg_id
 or $t5, $t5, $t2									# $t5 = $t5 OR total_len
-sw $t5, ($s0)										# save $t5 to packets[]
-
-# WHEN CALC CHECKSUM NEED TO PRESERVE TOTAL LEN AND $t9!!
-
+sw $t5, 0($s0)										# save $t5 to packets[]
+sll $t5, $s5, 24									# $t5 = priority shifted 24 to the left
+sll $t6, $t4, 22									# $t6 = flags shifted 22 to the left
+or $t5, $t5, $t6									# $t5 = priority OR flags
+sll $t6, $s6, 12									# $t6 = protocol shifted 12 to the left
+or $t5, $t5, $t6									# $t5 = $t5 OR protocol
+or $t5, $t5, $t3									# $t5 = $t5 OR frag_offset
+sw $t5, 4($s0)										# save $t5 to packets[]
+sll $t5, $s7, 8										# $t5 = src_addr shifted 8 to the left
+or $t5, $t5, $t8									# $t5 = src_addr OR dest_addr
+sh $t5, 8($s0)										# save $t5 to packets[]
+# WHEN CALC CHECKSUM NEED TO PRESERVE $t2, $t3, $t4, $t8 AND $t9!!
+# save $t regs on stack
+addi $sp, $sp, -20
+sw $t2, 0($sp)
+sw $t3, 4($sp)
+sw $t4, 8($sp)
+sw $t8, 12($sp)
+sw $t9, 16($sp)
+# call checksum
+move $a0, $s0										# $a0 = packet
+jal compute_checksum								# go to compute_checksum
+sh $v0, 10($s0)										# save checksum to packets[]
+# restore $t regs from stack 
+lw $t9, 16($sp)
+lw $t8, 12($sp)
+lw $t4, 8($sp)
+lw $t3, 4($sp)
+lw $t2, 0($sp)
+addi $sp, $sp, 20
+# continue looping
+li $t0, 0
+addi $t7, $t7, 1									# num_of_packets++
+beq $t0, $t4, packetize_end							# if flags = 0, end looping
+add $t3, $t3, $s2									# frag_offset += payload_size
+j packetize_loop									# loop again
+packetize_end:
+move $v0, $t7										# $v0 = num_of_packets
 # restore regs from stack
 lw $ra, 32($sp)
 lw $s7, 28($sp)
