@@ -75,11 +75,11 @@ jr $ra												# return to where func was called
 # PART III
 packetize:
 # retrieve args from stack
-lw $t4, 0($sp)  # msg_id
-lw $t5, 4($sp)  # priority
-lw $t6, 8($sp)  # protocol
-lw $t7, 12($sp) # src_addr
-lw $t8, 16($sp) # dest_addr
+lw $t4, 0($sp)  									# msg_id
+lw $t5, 4($sp)  									# priority
+lw $t6, 8($sp)  									# protocol
+lw $t7, 12($sp) 									# src_addr
+lw $t8, 16($sp) 									# dest_addr
 # allocate room on stack for registers
 addi $sp, $sp, -36
 sw $s0, 0($sp)
@@ -178,8 +178,25 @@ lw $s1, 4($sp)
 lw $s0, 0($sp)
 jr $ra												# return to where func was called
 
+
+# PART IV
 clear_queue:
-jr $ra
+li $v0, 0
+# check that max_queue is valid
+blez $a1, invalid_init_queue						# if max_size <= 0, it is invalid
+# if valid, clear queue
+sh $0, 0($a0)										# set lower half-word to zero
+sh $a1, 2($a0)										# set upper half-word to max_queue_size
+clear_queue_loop:
+sw $0, 4($a0)										# set next word in queue to zero
+addi $a0, $a0, 4									# go to next word in queue
+addi $a1, $a1, -1									# counter--
+bgtz $a1, clear_queue_loop							# if counter > 0, loop again
+j end_clear_queue									# go to end_clear_queue
+invalid_init_queue:
+li $v0, -1											# $v0 = -1 (if invalid)
+end_clear_queue:
+jr $ra												# return to where func was called
 
 enqueue:
 jr $ra
