@@ -223,7 +223,7 @@ beq $s2, $s3, end_enqueue							# if $s2 = $s3, no changes made
 move $s3, $s2										# $s3 = queue size
 addi $s3, $s3, 1									# $s3 = queue size + 1
 sh $s3, 0($s0)										# update queue size to new size
-addi $s0, $s0, 4									# get starting address of arr							
+addi $s0, $s0, 4									# get starting address of arr																					
 sll $s4, $s2, 2										# $s4 = queue size * 4
 add $s4, $s0, $s4									# get ending address of arr
 sw $s1, 0($s4)										# save packet into queue[i]
@@ -242,13 +242,15 @@ jal compare_to										# call compare_to
 li $t0, -1											# $t0 = -1 
 bne $v0, $t0, end_enqueue							# if new node => parent, end func
 # if new node < parent, swap
-sw $s5, 0($s6)
-sw $s7, 0($s4)
-
-
-
+sw $s5, 0($s6)										# new node = parent
+sw $s7, 0($s4)										# parent = new node
+# continue looping
+srl $s2, $s2, 1										# $s2 = size / 2
+sll $s4, $s2, 2										# $s4 = queue size * 4
+add $s4, $s0, $s4									# get ending address of arr
+bgtz $s2, enqueue_loop								# if size > 0, loop again
 end_enqueue:
-move $v0, $s3
+move $v0, $s3										# $s3 = queue size (after insertion)
 # restore regs from stack
 lw $ra, 32($sp)
 lw $s7, 28($sp)
@@ -260,9 +262,10 @@ lw $s2, 8($sp)
 lw $s1, 4($sp)
 lw $s0, 0($sp)
 addi $sp, $sp, 36
-jr $ra
+jr $ra												# return to where func was called
 						
-																						
+
+# PART VI																																												
 dequeue:
 jr $ra
 
