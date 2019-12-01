@@ -3,8 +3,10 @@
 queue:
 .half 7
 .half 10
-.word p00, p03, p01, p04, p07, p06, p02, 0, 0, 0, 
-packet: .word p05
+.word p01, p02, p03, p04, p05, p06, p07, 0, 0, 0,
+#.word p00, p03, p01, p04, p07, p06, p02, 0, 0, 0, 
+packet: .word p00
+#packet: .word p05
 v0: .asciiz "v0: "
 
 all_packets:
@@ -37,6 +39,37 @@ p07:
 .text
 .globl main
 main:
+# You will need to write your own code here to check the contents of the queue.
+la $t0, queue
+lhu $t2, 2($t0)
+blez $t2, end_main
+li $t3, 4
+print_queue:
+lw $t1, 0($t0)
+move $a0, $t1
+li $v0, 34
+syscall
+li $a0, ' '
+li $v0, 11
+syscall
+syscall
+print_queue_loop:
+lw $t1, 4($t0)
+move $a0, $t1
+li $v0, 34
+syscall
+li $a0, ' '
+li $v0, 11
+syscall
+syscall
+addi $t0, $t0, 4
+addi $t2, $t2, -1
+bgtz $t2, print_queue_loop
+li $a0, '\n'
+li $v0, 11
+syscall
+
+
 la $a0, queue
 lw $a1, packet
 jal enqueue
@@ -54,8 +87,36 @@ li $a0, '\n'
 li $v0, 11
 syscall
 
-# You will need to write your own code here to check the contents of the queue.
 
+
+# You will need to write your own code here to check the contents of the queue.
+la $t0, queue
+lhu $t2, 2($t0)
+blez $t2, end_main
+li $t3, 4
+print_queue2:
+lw $t1, 0($t0)
+move $a0, $t1
+li $v0, 34
+syscall
+li $a0, ' '
+li $v0, 11
+syscall
+syscall
+print_queue_loop2:
+lw $t1, 4($t0)
+move $a0, $t1
+li $v0, 34
+syscall
+li $a0, ' '
+li $v0, 11
+syscall
+syscall
+addi $t0, $t0, 4
+addi $t2, $t2, -1
+bgtz $t2, print_queue_loop2
+
+end_main:
 li $v0, 10
 syscall
 
