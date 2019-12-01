@@ -198,9 +198,71 @@ li $v0, -1											# $v0 = -1 (if invalid)
 end_clear_queue:
 jr $ra												# return to where func was called
 
-enqueue:
-jr $ra
 
+# PART V
+enqueue:
+# allocate room on stack for registers
+addi $sp, $sp, -36
+sw $s0, 0($sp)
+sw $s1, 4($sp)
+sw $s2, 8($sp)
+sw $s3, 12($sp)
+sw $s4, 16($sp)
+sw $s5, 20($sp)
+sw $s6, 24($sp)
+sw $s7, 28($sp)
+sw $ra, 32($sp)
+# declare vars
+move $s0, $a0										# $s0 = queue
+move $s1, $a1										# $s1 = packet
+# check if size = max_size
+lhu $s2, 0($s0)										# $s2 = queue size
+lhu $s3, 2($s0)										# $s3 = queue max_size
+beq $s2, $s3, end_enqueue							# if $s2 = $s3, no changes made
+# if max_size is not reached, increment queue size and insert new node
+move $s3, $s2										# $s3 = queue size
+addi $s3, $s3, 1									# $s3 = queue size + 1
+sh $s3, 0($s0)										# update queue size to new size
+addi $s0, $s0, 4									# get starting address of arr							
+sll $s4, $s2, 2										# $s4 = queue size * 4
+add $s4, $s0, $s4									# get ending address of arr
+sw $s1, 0($s4)										# save packet into queue[i]
+enqueue_loop:
+lw $s5, 0($s4)										# elem from end of arr
+# find parent
+addi $s6, $s2, -1									# $s6 = i - 1
+srl $s6, $s6, 1										# $s6 = (i-1)/2
+sll $s6, $s6, 2										# $s6 = $s5 * 4
+add $s6, $s0, $s6									# parent addr = queue + addr_offset
+lw $s7, 0($s6)										# $s7 = parent elem
+# compare new node with parent
+move $a0, $s5										# $a0 = new node
+move $a1, $s7										# $a1 = parent
+jal compare_to										# call compare_to
+li $t0, -1											# $t0 = -1 
+bne $v0, $t0, end_enqueue							# if new node => parent, end func
+# if new node < parent, swap
+sw $s5, 0($s6)
+sw $s7, 0($s4)
+
+
+
+end_enqueue:
+move $v0, $s3
+# restore regs from stack
+lw $ra, 32($sp)
+lw $s7, 28($sp)
+lw $s6, 24($sp)
+lw $s5, 20($sp)
+lw $s4, 16($sp)
+lw $s3, 12($sp)
+lw $s2, 8($sp)
+lw $s1, 4($sp)
+lw $s0, 0($sp)
+addi $sp, $sp, 36
+jr $ra
+						
+																						
 dequeue:
 jr $ra
 
