@@ -218,7 +218,7 @@ move $s1, $a1										# $s1 = packet
 # check if size = max_size
 lhu $s2, 0($s0)										# $s2 = queue size
 lhu $s3, 2($s0)										# $s3 = queue max_size
-beq $s2, $s3, end_enqueue							# if $s2 = $s3, no changes made
+beq $s2, $s3, end_enqueue							# if $s2 = $s3, make no changes
 # if max_size is not reached, increment queue size and insert new node
 move $s3, $s2										# $s3 = queue size
 addi $s3, $s3, 1									# $s3 = queue size + 1
@@ -250,7 +250,7 @@ sll $s4, $s2, 2										# $s4 = queue size * 4
 add $s4, $s0, $s4									# get ending address of arr
 bgtz $s2, enqueue_loop								# if size > 0, loop again
 end_enqueue:
-move $v0, $s3										# $s3 = queue size (after insertion)
+move $v0, $s3										# $v0 = queue size (after insertion)
 # restore regs from stack
 lw $ra, 32($sp)
 lw $s7, 28($sp)
@@ -267,8 +267,42 @@ jr $ra												# return to where func was called
 
 # PART VI																																												
 dequeue:
-jr $ra
+# allocate room on stack for registers
+addi $sp, $sp, -36
+sw $s0, 0($sp)
+sw $s1, 4($sp)
+sw $s2, 8($sp)
+sw $s3, 12($sp)
+sw $s4, 16($sp)
+sw $s5, 20($sp)
+sw $s6, 24($sp)
+sw $s7, 28($sp)
+sw $ra, 32($sp)
+# declare vars
+move $s0, $a0										# $s0 = queue
+li $s1, 0											# $s0 = 0 (to use as $v0)
+# check if queue is empty
+lhu $s2, 0($s0)										# $s2 = queue size
+beqz $s2, end_dequeue								# if size is 0 (queue is empty), make no changes
 
+
+end_dequeue:
+# restore regs from stack
+move $v0, $s1										# $v0 = addr of removed pckt or 0 if empty	
+lw $ra, 32($sp)
+lw $s7, 28($sp)
+lw $s6, 24($sp)
+lw $s5, 20($sp)
+lw $s4, 16($sp)
+lw $s3, 12($sp)
+lw $s2, 8($sp)
+lw $s1, 4($sp)
+lw $s0, 0($sp)
+addi $sp, $sp, 36
+jr $ra												# return to where func was called
+
+
+# PART VII
 assemble_message:
 jr $ra
 
