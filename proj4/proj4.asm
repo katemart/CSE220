@@ -242,8 +242,8 @@ jal compare_to										# call compare_to
 li $t0, -1											# $t0 = -1 
 bne $v0, $t0, end_enqueue							# if new node => parent, end func
 # if new node < parent, swap
-sw $s5, 0($s6)										# new node = parent
-sw $s7, 0($s4)										# parent = new node
+sw $s5, 0($s6)										# save new node to parent's addr
+sw $s7, 0($s4)										# save parent node to new node's addr
 # continue looping
 srl $s2, $s2, 1										# $s2 = size / 2
 sll $s4, $s2, 2										# $s4 = queue size * 4
@@ -280,15 +280,80 @@ sw $s7, 28($sp)
 sw $ra, 32($sp)
 # declare vars
 move $s0, $a0										# $s0 = queue
-li $s1, 0											# $s0 = 0 (to use as $v0)
+li $t0, 0											# $t0 = 0 (to use as $v0)
 # check if queue is empty
-lhu $s2, 0($s0)										# $s2 = queue size
-beqz $s2, end_dequeue								# if size is 0 (queue is empty), make no changes
-
-
+lhu $s1, 0($s0)										# $s1 = queue size
+beqz $s1, end_enqueue								# if size is 0 (queue is empty), make no changes
+# if queue is not empty, swap first node with end node
+lw $t0, 4($s0)										# $t0 = addr of root (being removed)
+sll $s2, $s1, 2										# $s2 = queue size * 4
+add $s2, $s0, $s2									# $s2 = ending address of arr
+lw $s3, 0($s2)										# $s3 = end of arr elem
+sw $s3, 4($s0)										# root = end elem
+sw $0, 0($s2)										# delete end elem 
+# update queue size
+addi $s1, $s1, -1									# $s1 = queue size - 1 = n
+sh $s1, 0($s0)										# update queue size to new size
+addi $s0, $s0, 4									# move pointer to first elem
+# heapify down
+li $s2, 0											# $s3 = i = parent index
+li $t4, -1											# $t4 = -1 (to use for comparison)
+li $t6, 1											# $t6 = 1 (to use for comparison)
+dequeue_loop:	
+# in use by this loop and before: $t0, ($t1, $t2), ($t3, $t5, $t7) --- $s0, $s1, $s2
+# get parent 
+sll $s3, $s2, 2										# $s3 = parent index * 4
+add $s3, $s0, $s3									# $s3 = addr of parent
+lw $t3, 0($s3)										# $t3 = parent elem
+# get left child
+sll $s4, $s2, 1										# $s4 = 2 * i
+addi $s4, $s4, 1									# $s4 = (2 * i) + 1 = left child index
+bgt $s4, $s1, end_dequeue							# if left child index > queue size, no left child
+sll $s5, $s4, 2										# $s5 = left child index * 4
+add $s5, $s0, $s5									# $s5 = addr of left child
+lw $t5, 0($s5)										# $t5 = left child elem
+# get right child
+sll $s6, $s2, 1										# $s6 = 2 * i
+addi $s6, $s6, 2									# $s6 = (2 * i) + 2 = right child index
+sgt $t8, $s6, $s1									# if right child index > queue size $t8 = 1 else $t8 = 0
+bnez $t8, compare_left								# if $t8 = 1, go to compare_left
+#bgt $s6, $s1, compare_left							# if right child index > queue size, no right child
+sll $s7, $s6, 2										# $s7 = right child index * 4
+add $s7, $s0, $s7									# $s7 = addr of right child 
+lw $t7, 0($s7)										# $t7 = right child elem
+# compare left child with right child
+# if $v0 = -1 left child < right child, if $v0 = 1 right child < left child, if $v0 = 0 theyre equal
+move $a0, $t5										# $a0 = left child
+move $a1, $t7										# $a1 = right child
+jal compare_to										# call compare_to
+beq $v0, $t6, check_right_child						# if $v0 = 1, right child is smaller
+# left child <= right child, compare left child with parent and swap if necessary
+compare_left:
+move $a0, $t5										# $a0 = left child
+move $a1, $t3										# $a1 = parent
+jal compare_to										# call compare_to
+bne $v0, $t4, end_dequeue							# if left child => parent, end func
+# if left child < parent, swap
+sw $t3, 0($s5)										# save parent to left child's addr
+sw $t5, 0($s3)										# save left child to parent's addr
+bnez $t8, end_dequeue								# if $t8 = 1 (there's only 1 child), branch to end
+addi $s2, $s2, 1									# i = i + 1
+j cont_dequeue_loop									# loop from the top
+# right child < left child, compare right child with parent and swap if necessary
+check_right_child:
+move $a0, $t7										# $a0 = right child
+move $a1, $t3										# $a1 = parent
+jal compare_to										# call compare_to
+bne $v0, $t4, end_dequeue							# if right child => parent, end func
+# if right child < parent, swap and loop from the top
+sw $t3, 0($s7)										# save parent to right child's addr
+sw $t7, 0($s3)										# save right child to parent's addr
+addi $s2, $s2, 2									# i = i + 2
+cont_dequeue_loop:									
+blt $s2, $s1, dequeue_loop							# if i < queue size, loop again
 end_dequeue:
 # restore regs from stack
-move $v0, $s1										# $v0 = addr of removed pckt or 0 if empty	
+move $v0, $t0										# $v0 = addr of removed pckt or 0 if empty	
 lw $ra, 32($sp)
 lw $s7, 28($sp)
 lw $s6, 24($sp)
