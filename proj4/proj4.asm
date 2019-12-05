@@ -300,7 +300,6 @@ li $s2, 0											# $s3 = i = parent index
 li $t4, -1											# $t4 = -1 (to use for comparison)
 li $t6, 1											# $t6 = 1 (to use for comparison)
 dequeue_loop:	
-# in use by this loop and before: $t0, ($t1, $t2), ($t3, $t5, $t7) --- $s0, $s1, $s2
 # get parent 
 sll $s3, $s2, 2										# $s3 = parent index * 4
 add $s3, $s0, $s3									# $s3 = addr of parent
@@ -369,8 +368,62 @@ jr $ra												# return to where func was called
 
 # PART VII
 assemble_message:
-jr $ra
-
+# allocate room on stack for registers
+addi $sp, $sp, -36
+sw $s0, 0($sp)
+sw $s1, 4($sp)
+sw $s2, 8($sp)
+sw $s3, 12($sp)
+sw $s4, 16($sp)
+sw $s5, 20($sp)
+sw $s6, 24($sp)
+sw $s7, 28($sp)
+sw $ra, 32($sp)
+# declare vars
+move $s0, $a0										# $s0 = msg
+move $s1, $a1										# $s1 = queue
+lhu $s2, 0($a1)										# $s2 = queue size
+li $t2, 0											# $t2 = num of packets dequeued
+li $v1, 0											# $v1 = 0
+assemble_loop:
+li $s5, 0											# reset payload every time
+lw $s3, 4($s1)										# $s3 = first packet addr
+lhu $s4, 10($s3)									# $s4 = checksum
+move $a0, $s3										# $a0 = packet 
+jal compute_checksum								# call compute_checksum
+beq $v0, $s4, cont_assemble_loop					# if $v0 = $s4, checksum passes so continue
+addi $v1, $v1, 1									# else checksum fails so $v1++
+cont_assemble_loop:
+lhu $s5, 0($s3)										# $s5 = total_length of packet
+addi $s5, $s5, -12									# $s5 = payload length
+lhu $s6, 4($s3)										# $s6 = 3rd half word of packet
+andi $s6, $s6, 0xFFF								# $s6 = frag_offset
+add $s7, $s0, $s6									# start writing to msg at offset
+string_loop:
+lbu $t3, 12($s3)									# $t3 = payload start
+sb $t3, 0($s7)										# $t3 = save char from payload to msg
+addi $s7, $s7, 1									# go to next char of msg
+addi $s3, $s3, 1									# go to next char of payload
+addi $s5, $s5, -1									# decrement payload length
+bgtz $s5, string_loop								# if payload length > 0, loop again
+# continue looping
+addi $t2, $t2, 1									# num_of_pckts_deq++
+addi $s1, $s1, 4									# go to next packet of queue
+addi $s2, $s2, -1									# queue size - 1
+bgtz $s2, assemble_loop								# if queue size > 0, loop again
+move $v0, $t2										# $v0 = num_of_pckts_deq
+# restore regs from stack
+lw $ra, 32($sp)
+lw $s7, 28($sp)
+lw $s6, 24($sp)
+lw $s5, 20($sp)
+lw $s4, 16($sp)
+lw $s3, 12($sp)
+lw $s2, 8($sp)
+lw $s1, 4($sp)
+lw $s0, 0($sp)
+addi $sp, $sp, 36
+jr $ra												# return to where func was called
 
 #################### DO NOT CREATE A .data SECTION ####################
 #################### DO NOT CREATE A .data SECTION ####################
