@@ -1,9 +1,11 @@
 .data
 .align 2
-packets: .space 141  # adjust as needed to store all bytes of the packets
-msg: .asciiz "Grace Murray Hopper was one of the first computer programmers to work on the Harvard Mark I."
+packets: .space 500 # adjust as needed to store all bytes of the packets
+#msg: .asciiz "Grace Murray Hopper was one of the first computer programmers to work on the Harvard Mark I."
+random_junk: .asciiz "1234567890"
+msg: .asciiz "i want to stop testing cases and want to go to sleep"
 .align 2
-payload_size: .word 24
+payload_size: .word 8
 ############# NOTE: ONLY WORKS WHEN payload_size IS MULTIPLE OF 4!!!!!!! #############
 version: .word 5
 msg_id: .word 154
@@ -58,6 +60,14 @@ syscall
 li $a0, '\n'
 li $v0, 11
 syscall
+syscall
+
+la $a0, random_junk
+li $v0, 4
+syscall
+
+li $a0, '\n'
+li $v0, 11
 syscall
 
 # You should consider writing some code here to print out the contents of the packets[] array.
