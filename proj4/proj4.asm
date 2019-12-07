@@ -112,15 +112,14 @@ move $t9, $s0										# $t9 = packets (copy)
 packetize_loop_start:
 lbu $t1, 0($s1)										# $t1 = first char from msg
 sb $t1, 12($s0)										# save $t1 into packets[12]
-beqz $t1, packetize_cont_null						# if $t1 = null-term, it is last packet
-bge $t0, $s2, packetize_cont						# if counter => payload_size, cont packetizing
 addi $t0, $t0, 1									# counter++
 addi $s0, $s0, 1									# packets[i]++
 addi $s1, $s1, 1									# msg[i]++
+beqz $t1, packetize_cont_null						# if $t1 = null-term, it is last packet
+beq $t0, $s2, packetize_cont						# if counter => payload_size, cont packetizing
 j packetize_loop_start								# loop again
 packetize_cont_null:
 li $t4, 0											# flags = 0
-addi $t0, $t0, 1									# counter++
 packetize_cont:
 move $s0, $t9										# $s0 = packets (starting addr)
 addi $t2, $t0, 12									# total_len = payload + header (which is always 12)
@@ -176,6 +175,7 @@ lw $s3, 12($sp)
 lw $s2, 8($sp)
 lw $s1, 4($sp)
 lw $s0, 0($sp)
+addi $sp, $sp, 36
 jr $ra												# return to where func was called
 
 
@@ -225,14 +225,16 @@ addi $s3, $s3, 1									# $s3 = queue size + 1
 sh $s3, 0($s0)										# update queue size to new size
 addi $s0, $s0, 4									# get starting address of arr																					
 sll $s4, $s2, 2										# $s4 = queue size * 4
-add $s4, $s0, $s4									# get ending address of arr
-sw $s1, 0($s4)										# save packet into queue[i]
+add $s4, $s0, $s4									# $s4 = ending address of arr
+sw $s1, 0($s4)										# save new packet to end of arr
+beqz $s2, end_enqueue								# if queue_size = 0, end func
+# heapify up										# save packet into queue[i]
 enqueue_loop:
-lw $s5, 0($s4)										# elem from end of arr
+lw $s5, 0($s4)										# $s5 = end of arr elem
 # find parent
-addi $s6, $s2, -1									# $s6 = i - 1
-srl $s6, $s6, 1										# $s6 = (i-1)/2
-sll $s6, $s6, 2										# $s6 = $s5 * 4
+addi $s2, $s2, -1									# $s2 = i - 1
+srl $s2, $s2, 1										# $s2 = (i-1)/2 = parent index
+sll $s6, $s2, 2										# $s6 = $s2 * 4
 add $s6, $s0, $s6									# parent addr = queue + addr_offset
 lw $s7, 0($s6)										# $s7 = parent elem
 # compare new node with parent
@@ -242,13 +244,12 @@ jal compare_to										# call compare_to
 li $t0, -1											# $t0 = -1 
 bne $v0, $t0, end_enqueue							# if new node => parent, end func
 # if new node < parent, swap
-sw $s5, 0($s6)										# save new node to parent's addr
-sw $s7, 0($s4)										# save parent node to new node's addr
+sw $s5, 0($s6)										# new node = parent
+sw $s7, 0($s4)										# parent = new node
 # continue looping
-srl $s2, $s2, 1										# $s2 = size / 2
-sll $s4, $s2, 2										# $s4 = queue size * 4
-add $s4, $s0, $s4									# get ending address of arr
-bgtz $s2, enqueue_loop								# if size > 0, loop again
+sll $s4, $s2, 2										# $s4 = parent index * 4
+add $s4, $s0, $s4									# $s4 = (new) ending address of arr
+bgtz $s2, enqueue_loop								# if parent index > 0, loop again
 end_enqueue:
 move $v0, $s3										# $v0 = queue size (after insertion)
 # restore regs from stack
@@ -262,7 +263,7 @@ lw $s2, 8($sp)
 lw $s1, 4($sp)
 lw $s0, 0($sp)
 addi $sp, $sp, 36
-jr $ra												# return to where func was called
+jr $ra											# return to where func was called
 						
 
 # PART VI																																												
@@ -283,7 +284,7 @@ move $s0, $a0										# $s0 = queue
 li $t0, 0											# $t0 = 0 (to use as $v0)
 # check if queue is empty
 lhu $s1, 0($s0)										# $s1 = queue size
-beqz $s1, end_enqueue								# if size is 0 (queue is empty), make no changes
+beqz $s1, end_dequeue								# if size is 0 (queue is empty), make no changes
 # if queue is not empty, swap first node with end node
 lw $t0, 4($s0)										# $t0 = addr of root (being removed)
 sll $s2, $s1, 2										# $s2 = queue size * 4
